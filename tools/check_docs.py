@@ -97,6 +97,15 @@ def check_file(path: str) -> list[str]:
         if m.group(1) in CUSTOM_TYPES:
             problems.append(f"{rel}: «??? {m.group(1)}» не получит класс admonition — "
                             f"используйте <details class=\"admonition {m.group(1)}\" markdown=\"1\">")
+    # 6. маркер виджета должен сопровождаться видимой ссылкой
+    #    (в служебных файлах .github/ и в документации примеры — пропускаем)
+    if not rel.replace("\\", "/").startswith((".github/", "INTERACTIVE.md", "STYLEGUIDE.md")):
+        for i, line in enumerate(lines):
+            if "<!--qc-embed:" in line:
+                window = " ".join(lines[i:i + 4])
+                if "**Интерактив:**" not in window:
+                    problems.append(f"{rel}:{i+1}: после маркера виджета нет строки «**Интерактив:** …»")
+
     return problems
 
 

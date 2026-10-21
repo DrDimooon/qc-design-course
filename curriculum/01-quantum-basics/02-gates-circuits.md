@@ -173,7 +173,9 @@ print(qc.draw())
 
 Конструктор квантовых схем собирает цепочку гейтов кликами и сразу показывает результат: текст цепи, вектор состояния, вероятности четырёх исходов и гистограмму измерений. Здесь можно проверить на практике, что порядок гейтов меняет состояние, а фазовые гейты меняют знак и фазу амплитуды, но не вероятности.
 
-<iframe class="qc-embed" src="../../assets/interactive/circuit-playground.html" title="Конструктор квантовых схем" height="640" loading="lazy"></iframe>
+<!--qc-embed: circuit-playground.html | Конструктор квантовых схем | 640-->
+
+**Интерактив:** [виджет «Конструктор квантовых схем»](https://drdimooon.github.io/qc-design-course/curriculum/01-quantum-basics/02-gates-circuits/#интерактив) · [файл виджета](../../assets/interactive/circuit-playground.html)
 
 **Задание.** Соберите цепочку и следите за амплитудами:
 

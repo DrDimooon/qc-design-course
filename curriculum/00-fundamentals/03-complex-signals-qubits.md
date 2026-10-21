@@ -134,7 +134,9 @@ print(after)  # [0.5-0.5j 0.5+0.5j] — повернулись на сфере �
 
 Виджет сферы Блоха показывает, как фазовые гейты поворачивают состояние вокруг оси Z: точка едет по экватору, а стрелка фазы на отдельной окружности сдвигается на 45° (T) или 90° (S). В этом уроке виджет нужен, чтобы увидеть главный вывод про фазу: после фазового гейта вероятности не меняются, меняется только азимут.
 
-<iframe class="qc-embed" src="../../assets/interactive/bloch-sphere.html" title="Сфера Блоха" height="600" loading="lazy"></iframe>
+<!--qc-embed: bloch-sphere.html | Сфера Блоха | 600-->
+
+**Интерактив:** [виджет «Сфера Блоха»](https://drdimooon.github.io/qc-design-course/curriculum/00-fundamentals/03-complex-signals-qubits/#интерактив) · [файл виджета](../../assets/interactive/bloch-sphere.html)
 
 **Задание.**
 

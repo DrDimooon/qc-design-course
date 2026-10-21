@@ -175,7 +175,9 @@ $$\frac{\partial f}{\partial\theta_j} = \frac{f(\theta_j + \pi/2) - f(\theta_j -
 
 Конструктор схем позволяет собрать короткий параметризованный анзац на двух кубитах кликами и сразу увидеть, что он даёт: текст цепи, вектор состояния, вероятности четырёх исходов и гистограмму из 200 измерений. В этом уроке виджет нужен, чтобы показать статистическую природу оценки энергии: один запуск анзаца даёт один исход, а для оценки $\langle H\rangle$ нужна серия измерений.
 
-<iframe class="qc-embed" src="../../assets/interactive/circuit-playground.html" title="Конструктор квантовых схем" height="640" loading="lazy"></iframe>
+<!--qc-embed: circuit-playground.html | Конструктор квантовых схем | 640-->
+
+**Интерактив:** [виджет «Конструктор квантовых схем»](https://drdimooon.github.io/qc-design-course/curriculum/03-algorithms/03-vqe-qaoa/#интерактив) · [файл виджета](../../assets/interactive/circuit-playground.html)
 
 **Задание.**
 

@@ -135,7 +135,9 @@ print(Statevector(qc))  # Statevector([1.+0.j, 0.+0.j], dims=(2,))
 
 Сфера Блоха показывает, как один кубит живёт на поверхности сферы: точка — это состояние, её высота над экватором — вероятности измерения, а азимут — фаза. В этом уроке виджет нужен, чтобы увидеть постулаты 1–4 в движении: суперпозицию, переворот кубита и унитарную эволюцию, посчитанную в числах.
 
-<iframe class="qc-embed" src="../../assets/interactive/bloch-sphere.html" title="Сфера Блоха" height="600" loading="lazy"></iframe>
+<!--qc-embed: bloch-sphere.html | Сфера Блоха | 600-->
+
+**Интерактив:** [виджет «Сфера Блоха»](https://drdimooon.github.io/qc-design-course/curriculum/00-fundamentals/02-quantum-mechanics-basics/#интерактив) · [файл виджета](../../assets/interactive/bloch-sphere.html)
 
 **Задание.**
 

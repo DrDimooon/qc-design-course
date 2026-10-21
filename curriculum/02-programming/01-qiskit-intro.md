@@ -129,7 +129,9 @@ plot_bloch_multivector(Statevector.from_instruction(qc1))
 
 Виджет-конструктор собирает квантовую схему кликами по кнопкам гейтов и сразу показывает текст цепи, вектор состояния, вероятности четырёх исходов и гистограмму из 200 измерений. Здесь видно руками, что `QuantumCircuit` — это описание, а не исполнение: та же цепочка гейтов, что записана в коде урока, даёт здесь тот же вектор состояния.
 
-<iframe class="qc-embed" src="../../assets/interactive/circuit-playground.html" title="Конструктор схем" height="700" loading="lazy"></iframe>
+<!--qc-embed: circuit-playground.html | Конструктор схем | 700-->
+
+**Интерактив:** [виджет «Конструктор схем»](https://drdimooon.github.io/qc-design-course/curriculum/02-programming/01-qiskit-intro/#интерактив) · [файл виджета](../../assets/interactive/circuit-playground.html)
 
 **Задание.**
 

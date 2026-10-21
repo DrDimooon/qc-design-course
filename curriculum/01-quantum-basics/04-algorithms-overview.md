@@ -168,7 +168,9 @@ flowchart LR
 
 Виджет «Интерференция и Гровер» — предпросмотр одного из алгоритмов, о котором шла речь выше: четыре элемента базы, один помечен, а на экране видно, как оракул и диффузор вмешиваются в амплитуды. Здесь механизм ускорения — интерференция — показан в самом маленьком масштабе.
 
-<iframe class="qc-embed" src="../../assets/interactive/grover-amplitude.html" title="Интерференция и Гровер: рост амплитуды" height="640" loading="lazy"></iframe>
+<!--qc-embed: grover-amplitude.html | Интерференция и Гровер: рост амплитуды | 640-->
+
+**Интерактив:** [виджет «Интерференция и Гровер: рост амплитуды»](https://drdimooon.github.io/qc-design-course/curriculum/01-quantum-basics/04-algorithms-overview/#интерактив) · [файл виджета](../../assets/interactive/grover-amplitude.html)
 
 **Задание.** Проверьте, как ведёт себя помеченный элемент:
 

@@ -16,6 +16,8 @@
 from __future__ import annotations
 
 import argparse
+import os
+import re
 import shutil
 import subprocess
 import sys
@@ -37,6 +39,36 @@ EXCLUDE_DIRS = {
     ".pytest_cache",
 }
 EXCLUDE_FILES = {"transcripts.jsonl", "package.json", "package-lock.json"}
+
+# Маркер интерактивного виджета в исходниках: <!--qc-embed: файл.html | Заголовок | высота-->
+# В репозитории GitHub не исполняет <iframe>, поэтому в .md лежит только маркер
+# и видимая ссылка на виджет; настоящий <iframe> подставляется здесь, при сборке.
+WIDGET_RE = re.compile(
+    r"<!--qc-embed:\s*(?P<name>[^|]+?)\s*\|\s*(?P<title>[^|]*?)\s*\|\s*(?P<h>\d+)\s*-->"
+)
+
+
+def expand_widgets(docs_root: Path) -> int:
+    """Заменяет маркеры виджетов на <iframe> с путём относительно файла урока."""
+    count = 0
+    for md in docs_root.rglob("*.md"):
+        text = md.read_text(encoding="utf-8")
+        if "qc-embed:" not in text:
+            continue
+
+        def repl(m: re.Match) -> str:
+            target = docs_root / "assets" / "interactive" / m.group("name").strip()
+            rel = Path(os.path.relpath(target, md.parent)).as_posix()
+            return (
+                f'<iframe class="qc-embed" src="{rel}" title="{m.group("title").strip()}" '
+                f'height="{m.group("h").strip()}" loading="lazy"></iframe>'
+            )
+
+        new_text = WIDGET_RE.sub(repl, text)
+        md.write_text(new_text, encoding="utf-8")
+        count += len(WIDGET_RE.findall(text))
+    return count
+
 
 
 def stage_content(staging: Path) -> Path:
@@ -60,6 +92,9 @@ def stage_content(staging: Path) -> Path:
             if item.name in EXCLUDE_FILES:
                 continue
             shutil.copy2(item, target)
+    widgets = expand_widgets(docs)
+    if widgets:
+        print(f"подставлено интерактивных виджетов: {widgets}")
     return docs
 
 

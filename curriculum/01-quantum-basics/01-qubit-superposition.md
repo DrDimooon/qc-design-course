@@ -148,7 +148,9 @@ print(AerSimulator().run(qc, shots=1000).result().get_counts())
 
 Сфера Блоха в виджете показывает, как гейты поворачивают вектор состояния одного кубита и как от этого меняются вероятности измерения и относительная фаза. Здесь то, что в тексте записано формулами, видно как движение точки: экватор, полюса и фазовые сдвиги.
 
-<iframe class="qc-embed" src="../../assets/interactive/bloch-sphere.html" title="Сфера Блоха: гейты и фаза" height="640" loading="lazy"></iframe>
+<!--qc-embed: bloch-sphere.html | Сфера Блоха: гейты и фаза | 640-->
+
+**Интерактив:** [виджет «Сфера Блоха: гейты и фаза»](https://drdimooon.github.io/qc-design-course/curriculum/01-quantum-basics/01-qubit-superposition/#интерактив) · [файл виджета](../../assets/interactive/bloch-sphere.html)
 
 **Задание.** Проверьте в виджете, что формулы раздела о сфере Блоха действительно работают:
 
