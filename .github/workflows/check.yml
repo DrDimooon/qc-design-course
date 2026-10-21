@@ -7,6 +7,9 @@ on:
     branches: [main]
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   check:
     runs-on: ubuntu-latest
@@ -17,67 +20,16 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Install toolchain
+      - name: Install MkDocs and Material for MkDocs
         run: |
           python -m pip install --upgrade pip
           python -m pip install mkdocs-material pymdown-extensions
-          python -m pip install qiskit qiskit-aer
 
       - name: Unit tests of the interactive core
         run: node tools/js/qc-core.test.js
 
-      - name: Build the site (strict: warnings are errors)
+      - name: Build the site (warnings are errors)
         run: python tools/build_site.py --strict
 
       - name: Check internal links and markdown blocks
-        run: |
-          python - <<'PY'
-          import os, re, sys
-          root = "."
-          skip = {".git", "site", ".site-build", ".venv", "node_modules", "__pycache__"}
-          link_re = re.compile(r"\[[^\]]*\]\(([^)\s]+(?:\s+[\"'][^\"']+[\"'])?)\)")
-          fence_re = re.compile(r"^(\s*)(```|~~~)")
-          bad = []
-          checked = 0
-          for dp, ds, fs in os.walk(root):
-              ds[:] = [d for d in ds if d not in skip]
-              for f in fs:
-                  if not f.endswith(".md"):
-                      continue
-                  p = os.path.join(dp, f)
-                  rel = os.path.relpath(p, root)
-                  text = open(p, encoding="utf-8").read()
-                  lines = text.splitlines()
-                  # 1) парность fence-маркеров
-                  if len(re.findall(r"^\s*(```|~~~)", text, re.M)) % 2 != 0:
-                      bad.append(f"{rel}: unbalanced code fences")
-                  # 2) локальные ссылки (вне блоков кода)
-                  infence = False
-                  for i, line in enumerate(lines, 1):
-                      if fence_re.match(line):
-                          infence = not infence
-                          continue
-                      if infence:
-                          continue
-                      for m in link_re.finditer(line):
-                          t = m.group(1).split(" ")[0].strip()
-                          checked += 1
-                          if t.startswith(("#", "http://", "https://", "mailto:")):
-                              continue
-                          t = t.split("#")[0]
-                          if not t:
-                              continue
-                          if not os.path.exists(os.path.normpath(os.path.join(dp, t))):
-                              bad.append(f"{rel}:{i}: broken link -> {t}")
-                  # 3) блоки с неверной разметкой: <details> без markdown="1"
-                  for i, line in enumerate(lines, 1):
-                      if re.match(r"^\s*<details(\s|>)", line) and "markdown=" not in line:
-                          bad.append(f"{rel}:{i}: <details> without markdown=\"1\"")
-              print(f"checked {checked} local links")
-          if bad:
-              print("PROBLEMS:")
-              for b in bad:
-                  print("  ", b)
-              sys.exit(1)
-          print("OK: links and fences are consistent")
-          PY
+        run: python tools/check_docs.py

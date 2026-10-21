@@ -34,7 +34,7 @@ jobs:
         run: |
           echo "url=https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/" >> "$GITHUB_OUTPUT"
 
-      - name: Build site (strict: warnings are errors)
+      - name: Build the site (warnings are errors)
         run: python tools/build_site.py --strict --site-url "${{ steps.site.outputs.url }}"
 
       - name: Upload Pages artifact

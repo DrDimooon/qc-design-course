@@ -1,3 +1,12 @@
+---
+title: "Публикация курса: репозиторий и сайт"
+module: "Общее"
+difficulty: "all"
+duration: "справочник"
+status: "draft"
+tags: [publishing, github, pages, ci, release]
+---
+
 # Публикация курса
 
 Короткий чек-лист: что сделать, чтобы репозиторий и сайт курса стали публичными. Имя репозитория зафиксировано — **`qc-design-course`**.
@@ -32,7 +41,19 @@ git push -u origin main
 | Описание | «Учебный курс по проектированию и оптимизации квантовых компьютеров: 7 модулей, лабы, каты, проекты, экзамены» / «An engineering course on designing and optimizing quantum computers — modules, labs, katas, projects» |
 | Темы (topics) | `quantum-computing`, `qiskit`, `quantum-error-correction`, `education`, `course`, `russian` |
 | Лицензия | MIT (файл `LICENSE` уже в репозитории) |
-| Сайт (в настройках) | `https://<ВАШ_ЛОГИН>.github.io/qc-design-course/` |
+| Сайт (в настройках) | `https://dr-dimooon.github.io/qc-design-course/` |
+
+### Что выбрать в форме создания репозитория
+
+| Поле | Значение | Почему |
+|---|---|---|
+| Owner | `DrDimooon` | — |
+| Repository name | `qc-design-course` | имя свободно, проверено |
+| Description | текст выше | виден в поиске GitHub и в профиле |
+| Visibility | **Public** | иначе сайт и материалы никто не увидит |
+| Add README | **Off** | свой README уже в репозитории |
+| Add .gitignore | **No .gitignore** | свой `.gitignore` уже в репозитории |
+| Add license | **No license** | свой `LICENSE` (MIT) уже в репозитории; шаблон GitHub создал бы второй файл с другим текстом |
 
 ## 4. Сайт на GitHub Pages
 
