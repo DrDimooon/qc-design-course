@@ -35,21 +35,21 @@ tags: [gates, circuits, unitarity, CNOT, universal-gates, qiskit]
 Матрицы тех же вентилей (вынесены отдельным блоком: в таблице они не читались, а в GitHub-просмотре матрица внутри ячейки вообще не отрисовывалась):
 
 $$
-X = \begin{pmatrix} 0 & 1 \\ 1 & 0 \end{pmatrix}, \qquad
-Y = \begin{pmatrix} 0 & -i \\ i & 0 \end{pmatrix}, \qquad
-Z = \begin{pmatrix} 1 & 0 \\ 0 & -1 \end{pmatrix}
+X = [[0, 1], [1, 0]], \qquad
+Y = [[0, -i], [i, 0]], \qquad
+Z = [[1, 0], [0, -1]]
 $$
 
 $$
-H = \frac{1}{\sqrt2}\begin{pmatrix} 1 & 1 \\ 1 & -1 \end{pmatrix}, \qquad
-S = \begin{pmatrix} 1 & 0 \\ 0 & i \end{pmatrix}, \qquad
-T = \begin{pmatrix} 1 & 0 \\ 0 & e^{i\pi/4} \end{pmatrix}
+H = \frac{1}{\sqrt2}\,[[1, 1], [1, -1]], \qquad
+S = [[1, 0], [0, i]], \qquad
+T = [[1, 0], [0, e^{i\pi/4}]]
 $$
 
 $$
-R_X(\theta) = \begin{pmatrix} \cos\frac\theta2 & -i\sin\frac\theta2 \\ -i\sin\frac\theta2 & \cos\frac\theta2 \end{pmatrix}, \quad
-R_Y(\theta) = \begin{pmatrix} \cos\frac\theta2 & -\sin\frac\theta2 \\ \sin\frac\theta2 & \cos\frac\theta2 \end{pmatrix}, \quad
-R_Z(\lambda) = \begin{pmatrix} e^{-i\lambda/2} & 0 \\ 0 & e^{i\lambda/2} \end{pmatrix}
+R_X(\theta) = [[\cos\frac\theta2, -i\sin\frac\theta2], [-i\sin\frac\theta2, \cos\frac\theta2]], \quad
+R_Y(\theta) = [[\cos\frac\theta2, -\sin\frac\theta2], [\sin\frac\theta2, \cos\frac\theta2]], \quad
+R_Z(\lambda) = [[e^{-i\lambda/2}, 0], [0, e^{i\lambda/2}]]
 $$
 
 Связи между гейтами полезно знать: $H = \frac{X+Z}{\sqrt2}$; $HZH = X$; $S^\dagger$ — обратный к S; $R_Z(\lambda)$ отличается от чистого фазового умножения лишь глобальной фазой.
@@ -79,7 +79,7 @@ print(X @ ket_plus)   # [0.7071, -0.7071] — X|+> = |->
 
 **CNOT (controlled-NOT, CX).** Двухкубитный вентиль: если контрольный кубит (control) равен $|1\rangle$, к целевому (target) применяется X; иначе ничего.
 
-$$\text{CNOT} = \begin{pmatrix}1&0&0&0\\0&1&0&0\\0&0&0&1\\0&0&1&0\end{pmatrix}, \qquad \text{CNOT}\,|10\rangle = |11\rangle$$
+$$\text{CNOT} = [[1,0,0,0], [0,1,0,0], [0,0,0,1], [0,0,1,0]], \qquad \text{CNOT}\,|10\rangle = |11\rangle$$
 
 CNOT создаёт корреляции между кубитами — без него нет запутанности. При этом маргинальные вероятности (вероятности отдельных измерений по каждому кубиту) он меняет: целевой кубит «заимствует» распределение контрольного. Например, $|10\rangle \xrightarrow{\text{CNOT}} |11\rangle$: до шага правый (целевой) кубит всегда был равен 0, после — всегда 1. Главное по-настоящему двухкубитное действие: CNOT переводит продуктовое $\frac{|0\rangle+|1\rangle}{\sqrt2}\otimes|0\rangle$ в запутанное $\frac{|00\rangle+|11\rangle}{\sqrt2}$ — здесь вероятность правого кубита, равная нулю, становится $\frac12$, а совместные исходы «разрешены» только как `00` и `11`.
 

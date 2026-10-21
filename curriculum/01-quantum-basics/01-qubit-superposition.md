@@ -17,7 +17,7 @@ $$|\psi\rangle = \alpha|0\rangle + \beta|1\rangle, \qquad \alpha, \beta \in \mat
 
 В векторной записи (см. [модуль 00](../00-fundamentals/01-linear-algebra.md)):
 
-$$|0\rangle = \begin{pmatrix}1\\0\end{pmatrix}, \qquad |1\rangle = \begin{pmatrix}0\\1\end{pmatrix}, \qquad |\psi\rangle = \begin{pmatrix}\alpha\\ \beta\end{pmatrix}$$
+$$|0\rangle = (1, 0)^T, \qquad |1\rangle = (0, 1)^T, \qquad |\psi\rangle = (\alpha, \beta)^T$$
 
 Физически кубитом служат: спин электрона (вверх/вниз), поляризация фотона (горизонтальная/вертикальная), два энергетических уровня сверхпроводящей схемы. Математика одна и та же.
 

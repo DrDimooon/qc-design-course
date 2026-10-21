@@ -66,7 +66,7 @@ $$\rho' = \sum_k K_k\,\rho\,K_k^\dagger, \qquad \sum_k K_k^\dagger K_k = I.$$
 
 **Амплитудное затухание** (потеря энергии, $T_1$-релаксация): система с вероятностью γ «падает» из $|1\rangle$ в $|0\rangle$:
 
-$$E_0 = \begin{pmatrix} 1 & 0 \\ 0 & \sqrt{1-\gamma}\end{pmatrix}, \qquad E_1 = \begin{pmatrix} 0 & \sqrt{\gamma} \\ 0 & 0\end{pmatrix}, \qquad \gamma = 1 - e^{-t/T_1}.$$
+$$E_0 = [[1, 0], [0, \sqrt{1-\gamma}]], \qquad E_1 = [[0, \sqrt{\gamma}], [0, 0]], \qquad \gamma = 1 - e^{-t/T_1}.$$
 
 <details class="admonition analogy" markdown="1">
 <summary class="admonition-title">Аналогия: горячий кофе остывает к комнатной температуре</summary>

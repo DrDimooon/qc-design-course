@@ -63,7 +63,7 @@ tags: [flashcards, spaced-repetition, quantum-country, review, mnemonics]
 ### 00.03 — Не всякая матрица — гейт
 **Q:** Почему матрица
 
-$$M = \begin{pmatrix} 1 & 1 \\ 0 & 1 \end{pmatrix}$$
+$$M = [[1, 1], [0, 1]]$$
 
 не может быть квантовым гейтом?
 <details markdown="1">

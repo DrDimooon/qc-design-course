@@ -35,21 +35,21 @@ print(z.conjugate())  # (3-4j)
 
 В квантовой механике вектор-столбец обозначают «кет»-скобкой: $|\psi\rangle$. Сопряжённо-транспонированный вектор-строка — «бра»: $\langle\psi|$. Состояние кубита (qubit) — вектор из двух комплексных чисел:
 
-$$|0\rangle = \begin{pmatrix} 1 \\ 0 \end{pmatrix}, \qquad |1\rangle = \begin{pmatrix} 0 \\ 1 \end{pmatrix}$$
+$$|0\rangle = (1, 0)^T, \qquad |1\rangle = (0, 1)^T$$
 
 Произвольное состояние — суперпозиция (superposition) базисных:
 
-$$|\psi\rangle = \alpha|0\rangle + \beta|1\rangle = \begin{pmatrix} \alpha \\ \beta \end{pmatrix}$$
+$$|\psi\rangle = \alpha|0\rangle + \beta|1\rangle = (\alpha, \beta)^T$$
 
 Внутреннее произведение (inner product) даёт число:
 
-$$\langle a | b \rangle = \begin{pmatrix} \bar{a_1} & \bar{a_2} \end{pmatrix} \begin{pmatrix} b_1 \\ b_2 \end{pmatrix} = \bar{a_1}b_1 + \bar{a_2}b_2$$
+$$\langle a | b \rangle = (\bar{a_1}, \bar{a_2}) \cdot (b_1, b_2) = \bar{a_1}b_1 + \bar{a_2}b_2$$
 
 Базис $|0\rangle, |1\rangle$ ортонормирован: $\langle 0|0\rangle = \langle 1|1\rangle = 1$, $\langle 0|1\rangle = 0$. Состояние должно быть нормировано: $\langle\psi|\psi\rangle = |\alpha|^2 + |\beta|^2 = 1$.
 
 Внешнее произведение (outer product) даёт оператор — проектор на состояние $|0\rangle$:
 
-$$|0\rangle\langle 0| = \begin{pmatrix} 1 & 0 \\ 0 & 0 \end{pmatrix}$$
+$$|0\rangle\langle 0| = [[1, 0], [0, 0]]$$
 
 ## Матрицы как операции над состояниями
 
@@ -83,7 +83,7 @@ flowchart LR
 
 Каждый квантовый гейт — матрица $U$, действующая на вектор состояния: $|\psi'\rangle = U|\psi\rangle$. Пример — гейт Адамара (Hadamard):
 
-$$H = \frac{1}{\sqrt{2}}\begin{pmatrix} 1 & 1 \\ 1 & -1 \end{pmatrix}, \qquad H|0\rangle = \frac{|0\rangle + |1\rangle}{\sqrt{2}}$$
+$$H = \frac{1}{\sqrt{2}}\,[[1, 1], [1, -1]], \qquad H|0\rangle = \frac{|0\rangle + |1\rangle}{\sqrt{2}}$$
 
 Состояние $\frac{|0\rangle + |1\rangle}{\sqrt{2}}$ обозначают $|+\rangle$ — «равновзвешенная суперпозиция».
 
@@ -117,7 +117,7 @@ print(H @ ket0)   # [0.7071, 0.7071] — состояние |+>
 
 Как описать два кубита вместе? Не сложением, а тензорным произведением (в коде — `np.kron`, «кронекерово произведение»):
 
-$$|a\rangle \otimes |b\rangle = |ab\rangle, \qquad |0\rangle \otimes |0\rangle = \begin{pmatrix} 1 \\ 0 \\ 0 \\ 0 \end{pmatrix}$$
+$$|a\rangle \otimes |b\rangle = |ab\rangle, \qquad |0\rangle \otimes |0\rangle = (1, 0, 0, 0)^T$$
 
 Правило для элементов: $A_{ik} B_{jl} = (A \otimes B)_{ij,kl}$. Размерности перемножаются: матрица $2\times 2$ на кубите + матрица $2\times 2$ на втором кубите дают $4\times 4$ на паре. Для $n$ кубитов вектор состояния имеет размер $2^n$ — вот почему классическая симуляция квантовых систем так дорога.
 
@@ -196,7 +196,7 @@ print(X_on_second @ np.kron(ket0, ket0))  # |01>
 
 Для проверки понадобится матрица
 
-$$M = \begin{pmatrix} 1 & 1 \\ 0 & 1 \end{pmatrix}$$
+$$M = [[1, 1], [0, 1]]$$
 
 1. Для $z = 1 + i$ найдите $|z|$, $\bar{z}$ и фазу $\theta$ в полярной форме.
 2. Почему матрица $M$ не может быть квантовым гейтом? Проверьте вычислением $M^\dagger M \neq I$.
