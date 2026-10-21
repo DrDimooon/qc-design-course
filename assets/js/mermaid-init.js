@@ -15,7 +15,20 @@
       startOnLoad: false,
       theme: scheme === 'slate' ? 'dark' : 'default',
       securityLevel: 'loose',
-      fontFamily: 'inherit'
+      fontFamily: 'inherit',
+      // Схемы не масштабируются под ширину колонки: иначе длинные
+      // конвейеры сжимаются в нечитаемую полоску. Вместо этого у блока
+      // появляется горизонтальная прокрутка (см. assets/styles/interactive.css).
+      flowchart: {
+        useMaxWidth: false,
+        htmlLabels: true,
+        nodeSpacing: 45,
+        rankSpacing: 60,
+        curve: 'basis',
+        padding: 8
+      },
+      sequence: { useMaxWidth: false, wrap: true },
+      themeVariables: { fontSize: '15px' }
     });
     window.mermaid.run({ querySelector: '.mermaid' });
   }

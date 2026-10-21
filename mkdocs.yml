@@ -33,7 +33,11 @@ markdown_extensions:
           format: !!python/name:pymdownx.superfences.fence_code_format
   - pymdownx.highlight
   - pymdownx.inlinehilite
-  - pymdownx.arithmatex
+  - pymdownx.arithmatex:
+      # generic: без «preview»-спанов: формула либо отрисована MathJax,
+      # либо (если скрипт не загрузился) не показывается вовсе — но не как
+      # сырой LaTeX в тексте.
+      generic: true
   - tables
   - toc:
       permalink: true

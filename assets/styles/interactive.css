@@ -157,3 +157,20 @@
   margin: 10px 0;
   font-size: 0.88rem;
 }
+
+/* --- Схемы mermaid: не сжимаем под ширину колонки, даём прокрутку --- */
+.md-typeset .mermaid {
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-bottom: 6px;
+}
+
+.md-typeset .mermaid svg {
+  max-width: none !important;
+  height: auto !important;
+}
+
+/* --- preview-спаны arithmatex: сырой LaTeX не должен показываться --- */
+.MathJax_Preview {
+  display: none !important;
+}

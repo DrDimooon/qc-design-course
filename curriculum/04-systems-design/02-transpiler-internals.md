@@ -54,14 +54,14 @@ for node in dag.op_nodes():
 
 ```mermaid
 flowchart LR
-  Init["Инициализация: HighLevelSynthesis, BasisTranslator, InverseCancellation"] -->|"раскладка"| Layout["Layout (раскладка): TrivialLayout, VF2Layout, SabreLayout"]
-  Layout -->|"роутинг"| Routing["Routing (роутинг): SabreSwap"]
-  Routing -->|"перевод в базис"| Translation["Translation (перевод): BasisTranslator, UnitarySynthesis"]
-  Translation -->|"оптимизация"| Optimization["Optimization: Optimize1qGatesDecomposition, TwoQubitPeepholeOptimization, CommutativeCancellation"]
-  Optimization -->|"расписание"| Scheduling["Scheduling: ALAPScheduleAnalysis, PadDelay"]
+  Init["Init: инициализация"] -->|"раскладка"| Layout["Layout: выбор кубитов"]
+  Layout -->|"роутинг"| Routing["Routing: вставка SWAP"]
+  Routing -->|"перевод в базис"| Translation["Translation: перевод в базис"]
+  Translation -->|"оптимизация"| Optimization["Optimization: оптимизация"]
+  Optimization -->|"расписание"| Scheduling["Scheduling: укладка по тактам"]
 ```
 
-Как читать схему: слева направо показаны шесть сцен `StagedPassManager`, и в каждой подписи перечислены типичные пассы этой сцены из таблицы урока (список для Qiskit 2.x). Сцена Init готовит схему (декомпозиция больших выстроек), Layout решает, где стоят логические кубиты, Routing доводит каждое 2q-взаимодействие до ребра графа связности, Translation переписывает гейты в basis gates и соблюдает направление операций, Optimization выкидывает лишние гейты и пересобирает блоки, а Scheduling раскладывает инструкции по времени с добавлением `Delay`.
+Как читать схему: слева направо показаны шесть сцен `StagedPassManager` — от `Init` до `Scheduling`; типичные пассы каждой сцены (список для Qiskit 2.x) перечислены в таблице урока и в тексте ниже. Сцена Init готовит схему (декомпозиция больших выстроек), Layout решает, где стоят логические кубиты, Routing доводит каждое 2q-взаимодействие до ребра графа связности, Translation переписывает гейты в basis gates и соблюдает направление операций, Optimization выкидывает лишние гейты и пересобирает блоки, а Scheduling раскладывает инструкции по времени с добавлением `Delay`.
 
 - Проверь себя: почему `SabreLayout` стоит в сцене layout, хотя внутри себя запускает ещё и routing?
 - Проверь себя: какой из пасс Optimization сначала собирает соседние 2q-гейты в блок, а какой затем синтезирует блок заново? (В Qiskit 2.x это делает `TwoQubitPeepholeOptimization`; связка `Collect2qBlocks` → `ConsolidateBlocks` → `UnitarySynthesis` — из 1.x.)
