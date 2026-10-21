@@ -1,0 +1,144 @@
+site_name: "QC: Проектирование и оптимизация квантовых компьютеров"
+site_description: "Учебный курс: от основ квантовых вычислений до оптимизации архитектуры и компиляции квантовых систем. Software/architecture трек + hardware трек."
+site_author: "DrDimooon"
+
+docs_dir: "."
+
+# Рабочие заметки аудита не публикуются на сайте
+exclude_docs: |
+  AUDIT-NOTES.md
+
+theme:
+  name: material
+  language: ru
+  palette:
+    primary: indigo
+    accent: cyan
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.expand
+    - content.code.copy
+    - content.code.annotate
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - attr_list
+  - md_in_html
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.highlight
+  - pymdownx.inlinehilite
+  - pymdownx.arithmatex
+  - tables
+  - toc:
+      permalink: true
+      # Юникодная слагификация: иначе кириллица выбрасывается из якорей
+      # заголовков и ссылки вида #как-проверять-решения не работают.
+      slugify: !!python/name:markdown.extensions.toc.slugify_unicode
+      separator: '-'
+  - meta
+
+extra_css:
+  - assets/styles/interactive.css
+  - assets/styles/admonitions.css
+
+extra_javascript:
+  - https://unpkg.com/mermaid@10/dist/mermaid.min.js
+  - assets/js/mermaid-init.js
+  - https://unpkg.com/mathjax@3/es5/tex-mml-chtml.js
+
+nav:
+  - Введение:
+      - README: README.md
+      - ROADMAP: ROADMAP.md
+      - PROGRESS: PROGRESS.md
+      - Интерактивный слой: INTERACTIVE.md
+  - Модуль 00 — Фундамент:
+      - О модуле: curriculum/00-fundamentals/README.md
+      - 01. Линейная алгебра: curriculum/00-fundamentals/01-linear-algebra.md
+      - 02. Основы квантовой механики: curriculum/00-fundamentals/02-quantum-mechanics-basics.md
+      - 03. Комплексные сигналы и кубиты: curriculum/00-fundamentals/03-complex-signals-qubits.md
+      - Лаба 00. Настройка окружения: curriculum/00-fundamentals/lab-00-env-setup.md
+      - Problem set 00. Аналитические задачи: curriculum/00-fundamentals/problem-set-00.md
+  - Модуль 01 — Основы квантовых вычислений:
+      - О модуле: curriculum/01-quantum-basics/README.md
+      - 01. Кубит и суперпозиция: curriculum/01-quantum-basics/01-qubit-superposition.md
+      - 02. Вентили и цепи: curriculum/01-quantum-basics/02-gates-circuits.md
+      - 03. Запутанность и измерение: curriculum/01-quantum-basics/03-entanglement-measurement.md
+      - 04. Обзор алгоритмов: curriculum/01-quantum-basics/04-algorithms-overview.md
+  - Модуль 02 — Программирование на Qiskit:
+      - О модуле: curriculum/02-programming/README.md
+      - 01. Знакомство с Qiskit: curriculum/02-programming/01-qiskit-intro.md
+      - 02. Вентили и цепи в Qiskit: curriculum/02-programming/02-gates-circuits-qiskit.md
+      - 03. Транспиляция и железо: curriculum/02-programming/03-transpilation-hardware.md
+      - 04. Шум и матрицы плотности: curriculum/02-programming/04-noise-simulation.md
+      - Лаба 02. Первая цепь: curriculum/02-programming/lab-02-first-circuit.md
+      - Лаба 03. Запуск на IBM Quantum: curriculum/02-programming/lab-03-ibm-quantum-run.md
+  - Модуль 03 — Алгоритмы:
+      - О модуле: curriculum/03-algorithms/README.md
+      - 01. Алгоритм Гровера: curriculum/03-algorithms/01-grover.md
+      - 02. QFT и Шор: curriculum/03-algorithms/02-qft-shor.md
+      - 03. VQE и QAOA: curriculum/03-algorithms/03-vqe-qaoa.md
+      - 04. Коррекция ошибок: curriculum/03-algorithms/04-error-correction.md
+      - Problem set 03. Аналитические задачи: curriculum/03-algorithms/problem-set-03.md
+  - Модуль 04 — Проектирование систем и оптимизация:
+      - О модуле: curriculum/04-systems-design/README.md
+      - 01. Архитектурные модели: curriculum/04-systems-design/01-architecture-models.md
+      - 02. Внутренности transpiler: curriculum/04-systems-design/02-transpiler-internals.md
+      - 03. Routing, mapping и Sabre: curriculum/04-systems-design/03-routing-mapping-sabre.md
+      - 04. Noise-aware компиляция: curriculum/04-systems-design/04-noise-aware-compilation.md
+      - 05. Оптимизация архитектуры: curriculum/04-systems-design/05-architecture-optimization.md
+      - Лаба 04. Сравнение платформ: curriculum/04-systems-design/lab-04-platform-comparison.md
+      - Лаба 05. Sabre routing: curriculum/04-systems-design/lab-05-sabre-routing.md
+  - Модуль 05 — Гардвэйр:
+      - О модуле: curriculum/05-hardware/README.md
+      - 01. Платформы кубитов: curriculum/05-hardware/01-qubit-platforms.md
+      - 02. Сверхпроводящие кубиты: curriculum/05-hardware/02-superconducting-qubits.md
+      - 03. Ионные ловушки и нейтральные атомы: curriculum/05-hardware/03-iontraps-neutral-atoms.md
+      - 04. Криогеника и техпроцессы: curriculum/05-hardware/04-cryogenics-fabrication.md
+      - 05. Бенчмаркинг устройств: curriculum/05-hardware/05-benchmarking.md
+  - Модуль 06 — Разборы публикаций:
+      - О модуле: curriculum/06-publications/README.md
+      - 01. Как читать статью: curriculum/06-publications/01-how-to-read-paper.md
+      - "02. Разбор: Anthropic / Claude": curriculum/06-publications/02-anthropic-efficient-circuits.md
+      - "03. Разбор: Google Willow и QEC": curriculum/06-publications/03-google-willow-qec.md
+  - Тесты:
+      - Квиз 00: tests/00-quiz.md
+      - Квиз 01: tests/01-quiz.md
+      - Квиз 02: tests/02-quiz.md
+      - Квиз 03: tests/03-quiz.md
+      - Квиз 04: tests/04-quiz.md
+      - Квиз 05: tests/05-quiz.md
+      - Certification quiz: tests/certification-quiz.md
+      - Final exam: tests/final-exam.md
+      - Флеш-карты: tests/flashcards.md
+      - Расписание повторений: tests/flashcards-schedule.md
+  - Каты:
+      - О катях: tests/katas/README.md
+      - Kata 01. Bell: tests/katas/kata-01-bell.md
+      - Kata 02. Grover на 2 кубитах: tests/katas/kata-02-grover-2q.md
+      - Kata 03. API Qiskit: tests/katas/kata-03-qiskit-api.md
+      - Kata 04. Настройка transpile: tests/katas/kata-04-transpile-tuning.md
+      - Kata 05. Seeds Sabre: tests/katas/kata-05-sabre-seeds.md
+  - Проекты:
+      - О проектах: projects/README.md
+      - 01. Бенчмарк транспилятора: projects/01-transpiler-benchmark.md
+      - 02. Оракулы Гровера: projects/02-grover-oracles.md
+      - 03. VQE для H2: projects/03-vqe-h2.md
+      - 04. Qubit mapper: projects/04-qubit-mapper.md
+      - 05. Чип с KQCircuits: projects/05-kqcircuits-chip.md
+  - Ресурсы:
+      - Курсы: resources/courses.md
+      - Книги: resources/books.md
+      - Статьи: resources/papers.md
+      - Видеолекции: resources/video-lectures.md
+      - Статьи и блоги: resources/articles.md
+      - Инструменты: resources/tools.md
+      - Сообщества: resources/communities.md
+      - Советы практиков: resources/practitioner-tips.md
+      - Стил-гайд оформления: STYLEGUIDE.md

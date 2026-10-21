@@ -1,0 +1,23 @@
+cff-version: 1.2.0
+message: "Если вы используете этот курс в публикации, процитируйте его так."
+title: "QC: Проектирование и оптимизация квантовых компьютеров"
+abstract: >-
+  Русскоязычный инженерный курс по квантовым вычислениям: от линейной алгебры
+  и постулатов квантовой механики к программированию на Qiskit, алгоритмам
+  (Гровер, Шор, VQE/QAOA, коррекция ошибок), проектированию систем и
+  компиляции, аппаратным платформам и разбору научных публикаций.
+type: dataset
+license: MIT
+repository-code: "https://github.com/DrDimooon/qc-design-course"
+url: "https://github.com/DrDimooon/qc-design-course"
+authors:
+  - name: "DrDimooon"
+keywords:
+  - quantum computing
+  - Qiskit
+  - quantum computing course
+  - quantum error correction
+  - transpiler
+  - education
+version: "1.0"
+date-released: "2026-10-21"

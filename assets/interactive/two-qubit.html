@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Два кубита: суперпозиция, запутанность, корреляции</title>
+<link rel="stylesheet" href="../styles/interactive.css">
+<style>
+  .qc-title {
+    font-weight: 600;
+    font-size: 0.9rem;
+    margin: 0 0 4px;
+  }
+  .qc-substate {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 0.78rem;
+    line-height: 1.5;
+    white-space: pre-wrap;
+    opacity: 0.85;
+    margin-top: 6px;
+  }
+  .qc-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 8px 0 4px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 0.82rem;
+  }
+  .qc-table th,
+  .qc-table td {
+    border: 1px solid rgba(128, 128, 128, 0.35);
+    padding: 4px 8px;
+    text-align: left;
+  }
+</style>
+</head>
+<body>
+
+<div class="qc-widget">
+
+  <p class="qc-head">Два кубита: суперпозиция, запутанность, корреляции</p>
+  <p class="qc-sub">
+    Наблюдайте, как меняются редуцированные состояния кубитов q0 и q1, вероятности
+    совместных исходов и конкорренс состояния. Базовый порядок амплитуд:
+    |00⟩, |01⟩, |10⟩, |11⟩ (старший бит — q0).
+  </p>
+
+  <div class="qc-controls">
+    <button type="button" class="qc-btn" id="btn-h0">H на q0</button>
+    <button type="button" class="qc-btn" id="btn-h1">H на q1</button>
+    <button type="button" class="qc-btn" id="btn-cnot">CNOT (q0 -&gt; q1)</button>
+    <button type="button" class="qc-btn" id="btn-reset">Сброс |00⟩</button>
+    <button type="button" class="qc-btn" id="btn-compare">Сравнить: H на обоих без CNOT</button>
+    <button type="button" class="qc-btn" id="btn-measure">Измерить 200 раз</button>
+  </div>
+
+  <div class="qc-row">
+    <div class="qc-col">
+      <p class="qc-title">Кубит q0 (редукция по q1)</p>
+      <canvas id="cv-q0" class="qc-canvas" style="height:250px"></canvas>
+      <div class="qc-substate" id="tx-q0"></div>
+    </div>
+    <div class="qc-col">
+      <p class="qc-title">Кубит q1 (редукция по q0)</p>
+      <canvas id="cv-q1" class="qc-canvas" style="height:250px"></canvas>
+      <div class="qc-substate" id="tx-q1"></div>
+    </div>
+  </div>
+
+  <div class="qc-state" id="state-text"></div>
+
+  <table class="qc-table" id="prob-table">
+    <thead>
+      <tr><th>Исход</th><th>Вероятность</th><th>Амплитуда</th></tr>
+    </thead>
+    <tbody id="prob-body"></tbody>
+  </table>
+
+  <p class="qc-title" style="margin-top:14px">Счётчики измерений</p>
+  <canvas id="cv-hist" class="qc-canvas" style="height:220px"></canvas>
+  <div class="qc-substate" id="tx-hist"></div>
+
+  <details class="qc-read">
+    <summary>Как читать</summary>
+    <ul>
+      <li>
+        Слева и справа — сферы Блоха <em>отдельных</em> кубитов. Для каждого
+        кубита берётся редуцированное состояние: амплитуды суммируются по
+        второму кубиту (след), и только затем строится вектор Блоха.
+      </li>
+      <li>
+        Сфера показывает редуцированные амплитуды кубита (сумма по второму
+        кубиту), приведённые к норме. Для сепарабельного состояния это точная
+        картина: после H на q0 указатель q0 лежит на экваторе (состояние |+⟩),
+        а q1 остаётся на полюсе |0⟩ (вектор вдоль оси Z).
+      </li>
+      <li>
+        После «H на q0», затем «CNOT (q0 -&gt; q1)» получается состояние Белла
+        (|00⟩ + |11⟩)/sqrt(2). Редуцированные амплитуды каждого кубита
+        оказываются равными (0.7071 и 0.7071), но главный признак запутанности
+        виден в строке «чистота редукции»: она равна 0.500, то есть по
+        отдельности кубит полностью смешан (P(0) = P(1) = 50%), хотя пара в
+        целом находится в чистом состоянии. Сфера сама по себе запутанность
+        не описывает — её показывают конкорренс и запрет части исходов.
+      </li>
+      <li>
+        Исходы |01⟩ и |10⟩ в таком состоянии невозможны: при измерении обоих
+        кубитов всегда получаются одинаковые биты (00 или 11), то есть
+        корреляция 100%, хотя каждый кубит по отдельности даёт 50/50.
+      </li>
+      <li>
+        Конкорренс C = 2|a00 a11 - a01 a10| для чистого состояния двух
+        кубитов: C = 0 — сепарабельное состояние, C = 1 — максимально
+        запутано. В виджете порог запутанности — C &gt; 0.1.
+      </li>
+      <li>
+        Гистограмма внизу — накопленные счётчики измерений: каждый клик по
+        кнопке «Измерить 200 раз» добавляет 200 новых результатов
+        (200 запусков одного и того же приготовленного состояния).
+      </li>
+      <li>
+        Кнопка «Сброс |00⟩» возвращает начальное состояние и одновременно
+        обнуляет счётчики измерений. Кнопка «Сравнить» строит состояние
+        |+⟩|+⟩ (H на обоих кубитах без CNOT): 25% на каждый исход,
+        конкорренс 0, кубиты никак не коррелированы.
+      </li>
+    </ul>
+  </details>
+
+  <p class="qc-note">
+    Техническая заметка. Виджет работает полностью офлайн (в том числе по
+    file://), без внешних сетевых ресурсов: вся математика выполняется
+    библиотекой assets/js/qc-core.js (QC.sv, QC.bloch, QC.draw, QC.dom).
+    Измерения здесь не схлопывают состояние-вектор — они эмулируют серию
+    запусков одного приготовленного состояния; на реальном устройстве каждое
+    измерение схлопывает состояние в один из базисных векторов. Расчёт
+    конкорренса выполнен вручную по формуле C = 2|a00 a11 - a01 a10| для
+    чистого состояния двух кубитов.
+  </p>
+
+</div>
+
+<script src="../js/qc-core.js"></script>
+<script src="../js/widget-two-qubit.js"></script>
+
+</body>
+</html>

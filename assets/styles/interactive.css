@@ -1,0 +1,159 @@
+/* Стили интерактивного слоя курса: виджеты, встраиваемые схемы, иллюстрации.
+   Файл подключается в mkdocs.yml через extra_css. */
+
+.qc-widget {
+  border: 1px solid rgba(128, 128, 128, 0.35);
+  border-radius: 10px;
+  padding: 12px 14px;
+  margin: 12px 0 20px;
+  background: rgba(127, 127, 127, 0.04);
+  font-size: 0.92rem;
+}
+
+.qc-widget .qc-head {
+  margin: 0 0 2px;
+  font-size: 1.02rem;
+  font-weight: 600;
+}
+
+.qc-widget .qc-sub {
+  margin: 0 0 10px;
+  opacity: 0.75;
+  font-size: 0.85rem;
+}
+
+.qc-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 8px 0;
+}
+
+.qc-btn {
+  appearance: none;
+  border: 1px solid rgba(128, 128, 128, 0.45);
+  background: rgba(127, 127, 127, 0.08);
+  color: inherit;
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: 0.84rem;
+  cursor: pointer;
+  font-family: inherit;
+  line-height: 1.5;
+}
+
+.qc-btn:hover {
+  background: rgba(127, 127, 127, 0.2);
+}
+
+.qc-btn:focus-visible {
+  outline: 2px solid #7c4dff;
+  outline-offset: 1px;
+}
+
+.qc-btn[aria-pressed="true"] {
+  background: #7c4dff;
+  border-color: #7c4dff;
+  color: #fff;
+}
+
+.qc-btn[disabled] {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.qc-canvas {
+  width: 100%;
+  display: block;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.65);
+}
+
+[data-md-color-scheme="slate"] .qc-canvas {
+  background: rgba(0, 0, 0, 0.28);
+}
+
+.qc-state {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.82rem;
+  line-height: 1.55;
+  white-space: pre-wrap;
+  background: rgba(127, 127, 127, 0.08);
+  border-radius: 6px;
+  padding: 8px 10px;
+  margin-top: 8px;
+}
+
+.qc-read {
+  margin-top: 10px;
+  font-size: 0.85rem;
+}
+
+.qc-read summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.qc-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  font-size: 0.8rem;
+  margin-top: 6px;
+  opacity: 0.85;
+}
+
+.qc-note {
+  font-size: 0.8rem;
+  opacity: 0.75;
+  margin-top: 8px;
+}
+
+.qc-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.qc-col {
+  flex: 1 1 260px;
+  min-width: 240px;
+}
+
+.qc-figure {
+  text-align: center;
+  margin: 16px 0;
+}
+
+.qc-figure img {
+  max-width: 100%;
+  border-radius: 8px;
+}
+
+.qc-figure figcaption {
+  font-size: 0.8rem;
+  opacity: 0.75;
+  margin-top: 6px;
+}
+
+.qc-embed {
+  display: block;
+  width: 100%;
+  border: 1px solid rgba(128, 128, 128, 0.35);
+  border-radius: 10px;
+  margin: 12px 0 20px;
+  background: #fff;
+}
+
+[data-md-color-scheme="slate"] .qc-embed {
+  background: #1e2129;
+}
+
+.qc-task {
+  border-left: 3px solid #7c4dff;
+  background: rgba(124, 77, 255, 0.06);
+  border-radius: 0 6px 6px 0;
+  padding: 8px 12px;
+  margin: 10px 0;
+  font-size: 0.88rem;
+}

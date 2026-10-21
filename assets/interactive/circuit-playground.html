@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Конструктор квантовых схем</title>
+<link rel="stylesheet" href="../styles/interactive.css">
+</head>
+<body>
+
+<div class="qc-widget">
+
+  <p class="qc-head">Конструктор квантовых схем</p>
+  <p class="qc-sub">Нажимайте кнопки гейтов: схема собирается по шагам, а внизу видно состояние, вероятности исходов и результаты измерений.</p>
+
+  <canvas id="circuit" class="qc-canvas" width="960" height="240" style="height:240px;" role="img" aria-label="Схема квантовой цепи на двух кубитах"></canvas>
+
+  <div class="qc-controls" role="group" aria-label="Однокубитные гейты">
+    <button type="button" class="qc-btn" id="gate-X">X</button>
+    <button type="button" class="qc-btn" id="gate-Y">Y</button>
+    <button type="button" class="qc-btn" id="gate-Z">Z</button>
+    <button type="button" class="qc-btn" id="gate-H">H</button>
+    <button type="button" class="qc-btn" id="gate-S">S</button>
+    <button type="button" class="qc-btn" id="gate-T">T</button>
+    <button type="button" class="qc-btn" id="gate-cnot">CNOT</button>
+  </div>
+
+  <div class="qc-controls" role="group" aria-label="Целевой кубит для однокубитных гейтов">
+    <span class="qc-note" style="margin-top:0;align-self:center;">Цель гейта:</span>
+    <button type="button" class="qc-btn" id="target-q0" aria-pressed="true">q0</button>
+    <button type="button" class="qc-btn" id="target-q1" aria-pressed="false">q1</button>
+  </div>
+
+  <div class="qc-controls" role="group" aria-label="Действия со схемой">
+    <button type="button" class="qc-btn" id="undo">Удалить последний</button>
+    <button type="button" class="qc-btn" id="random">Случайная схема</button>
+    <button type="button" class="qc-btn" id="measure">Измерить 200 раз</button>
+    <button type="button" class="qc-btn" id="reset">Сброс</button>
+  </div>
+
+  <div class="qc-row">
+    <div class="qc-col">
+      <p class="qc-note" style="margin-top:0;">Вероятности исходов</p>
+      <canvas id="probs" class="qc-canvas" width="480" height="190" style="height:190px;" role="img" aria-label="Диаграмма вероятностей четырёх исходов"></canvas>
+    </div>
+    <div class="qc-col">
+      <p class="qc-note" style="margin-top:0;">Гистограмма измерений</p>
+      <canvas id="hist" class="qc-canvas" width="480" height="190" style="height:190px;" role="img" aria-label="Гистограмма результатов измерений"></canvas>
+      <p class="qc-note" id="shots" style="margin-top:4px;">Измерений ещё не было.</p>
+    </div>
+  </div>
+
+  <div class="qc-state" id="state"></div>
+
+  <details class="qc-read">
+    <summary>Как читать</summary>
+    <p><strong>Схема сверху.</strong> Две горизонтальные линии — дорожки кубитов: сверху <em>кубит 0</em> (старший бит, левая цифра в кете), снизу <em>кубит 1</em>. Прямоугольник с буквой — однокубитный гейт на той дорожке, где он нарисован. Кружок с крестом — CNOT: кружок на управляющем кубите q0, крест на целевом q1 (он переворачивает q1, если q0 в состоянии |1⟩). Гейты читаются слева направо, как в программе.</p>
+    <p><strong>Вероятности.</strong> Диаграмма показывает четыре исхода измерения двух кубитов: |00⟩, |01⟩, |10⟩, |11⟩. Высота столбика — вероятность, над столбиком — процент. Сумма четырёх вероятностей всегда равна 100&nbsp;%.</p>
+    <p><strong>Гистограмма.</strong> Кнопка «Измерить 200 раз» моделирует 200 независимых запусков одной и той же схемы: каждый запуск начинается с |00⟩ и измеряется ровно один раз. Поэтому распределение частот повторяет диаграмму вероятностей, а не «схлопывает» состояние. При любом изменении схемы счётчики обнуляются.</p>
+    <p><strong>Блок состояния.</strong> Первая строка — текст цепи («q0: H, S; q1: X; CNOT(q0-&gt;q1)»), вторая — вектор состояния с амплитудами, третья — вероятности. Кет |q0 q1⟩ читается как «q0 и q1 в базисе», а знак амплитуды задаёт фазу: минус или комплексная фаза меняют интерференцию, но не вероятности.</p>
+  </details>
+
+  <p class="qc-note"><strong>Техническая заметка.</strong> Квантовая схема — обратимая функция: у каждого гейта есть обратный (X, Y, Z, H, S и T самоподобны, CNOT обратен сам себе), поэтому по итоговому состоянию можно восстановить всю историю цепочки. Измерение, наоборот, необратимо: оно разрушает суперпозицию и оставляет один базисный вектор. Виджет всегда показывает состояние <em>до</em> измерения, а гистограмма — результаты 200 отдельных копий схемы.</p>
+
+</div>
+
+<script src="../js/qc-core.js"></script>
+<script src="../js/widget-circuit-playground.js"></script>
+</body>
+</html>

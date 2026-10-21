@@ -1,0 +1,13 @@
+# Нормализация переводов строк: в репозитории всегда LF, на Windows checkout — по умолчанию.
+* text=auto eol=lf
+
+# Бинарные файлы (изображения, GIF) — не трогать
+*.png binary
+*.jpg binary
+*.gif binary
+*.ico binary
+*.pdf binary
+
+# Windows-обвязка скриптов
+*.bat text eol=crlf
+*.cmd text eol=crlf
