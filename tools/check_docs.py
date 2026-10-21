@@ -49,7 +49,8 @@ def check_file(path: str) -> list[str]:
     lines = text.splitlines()
     problems: list[str] = []
 
-    # 1. frontmatter
+    # 1. frontmatter (у служебных файлов .github/ он не нужен — это не страницы курса)
+    is_service = rel.replace("\\", "/").startswith(".github/")
     if lines and lines[0].strip() == "---":
         end = next((i for i in range(1, min(40, len(lines))) if lines[i].strip() == "---"), None)
         if end is None:
@@ -60,7 +61,8 @@ def check_file(path: str) -> list[str]:
                 if not re.search(rf"^{key}\s*:", fm, re.M):
                     problems.append(f"{rel}:2: в frontmatter нет ключа «{key}»")
     else:
-        problems.append(f"{rel}:1: нет frontmatter")
+        if not is_service:
+            problems.append(f"{rel}:1: нет frontmatter")
 
     # 2. fence-маркеры
     if len(FENCE.findall(text)) % 2 != 0:
