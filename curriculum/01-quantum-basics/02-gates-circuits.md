@@ -20,17 +20,37 @@ tags: [gates, circuits, unitarity, CNOT, universal-gates, qiskit]
 
 ## Таблица основных вентилей: матрица и действие
 
-| Вентиль | Матрица | Действие на сфере Блоха | Примечание |
-|---|---|---|---|
-| X | $\begin{pmatrix}0&1\\1&0\end{pmatrix}$ | вращение на $\pi$ вокруг оси $x$ ($\|0\rangle \leftrightarrow \|1\rangle$) | квантовый NOT |
-| Y | $\begin{pmatrix}0&-i\\ i&0\end{pmatrix}$ | вращение на $\pi$ вокруг оси $y$ | \|0\rangle → $i\|1\rangle$ |
-| Z | $\begin{pmatrix}1&0\\0&-1\end{pmatrix}$ | вращение на $\pi$ вокруг оси $z$ | фазовый флип: $\|+\rangle \to \|-\rangle$ |
-| H | $\frac{1}{\sqrt2}\begin{pmatrix}1&1\\1&-1\end{pmatrix}$ | вращение на $\pi$ вокруг оси, лежащей между $x$ и $z$ | $\|0\rangle \to \|+\rangle$, $\|1\rangle \to \|-\rangle$ |
-| S | $\begin{pmatrix}1&0\\0&i\end{pmatrix}$ | фаза $\pi/2$ (поворот по долготе) | $S = T^2$; $SS = Z$ |
-| T | $\begin{pmatrix}1&0\\0&e^{i\pi/4}\end{pmatrix}$ | фаза $\pi/4$ | «$\pi/8$-вентиль» (в записи $T = e^{-i\pi Z/8}$); нужен для универсальности |
-| $R_X(\theta)$ | $\begin{pmatrix}\cos\frac\theta2 & -i\sin\frac\theta2 \\ -i\sin\frac\theta2 & \cos\frac\theta2\end{pmatrix}$ | вращение на $\theta$ вокруг $x$ | из всех этих гейтов собираются сложные операции |
-| $R_Y(\theta)$ | $\begin{pmatrix}\cos\frac\theta2 & -\sin\frac\theta2 \\ \sin\frac\theta2 & \cos\frac\theta2\end{pmatrix}$ | вращение на $\theta$ вокруг $y$ | меняет полярный угол $\theta$ («широту» точки) на сфере |
-| $R_Z(\lambda)$ | $\begin{pmatrix}e^{-i\lambda/2}&0\\0&e^{i\lambda/2}\end{pmatrix}$ | вращение на $\lambda$ вокруг $z$ | меняет только относительную фазу $\varphi$ |
+| Вентиль | Действие на сфере Блоха | Примечание |
+|---|---|---|
+| X | вращение на $\pi$ вокруг оси $x$ ($\|0\rangle \leftrightarrow \|1\rangle$) | квантовый NOT |
+| Y | вращение на $\pi$ вокруг оси $y$ | $\|0\rangle \to i\|1\rangle$ |
+| Z | вращение на $\pi$ вокруг оси $z$ | фазовый флип: $\|+\rangle \to \|-\rangle$ |
+| H | вращение на $\pi$ вокруг оси, лежащей между $x$ и $z$ | $\|0\rangle \to \|+\rangle$, $\|1\rangle \to \|-\rangle$ |
+| S | фаза $\pi/2$ (поворот по долготе) | $S = T^2$; $SS = Z$ |
+| T | фаза $\pi/4$ | «$\pi/8$-вентиль» (в записи $T = e^{-i\pi Z/8}$); нужен для универсальности |
+| $R_X(\theta)$ | вращение на $\theta$ вокруг $x$ | из всех этих гейтов собираются сложные операции |
+| $R_Y(\theta)$ | вращение на $\theta$ вокруг $y$ | меняет полярный угол $\theta$ («широту» точки) на сфере |
+| $R_Z(\lambda)$ | вращение на $\lambda$ вокруг $z$ | меняет только относительную фазу $\varphi$ |
+
+Матрицы тех же вентилей (вынесены отдельным блоком: в таблице они не читались, а в GitHub-просмотре матрица внутри ячейки вообще не отрисовывалась):
+
+$$
+X = \begin{pmatrix} 0 & 1 \\ 1 & 0 \end{pmatrix}, \qquad
+Y = \begin{pmatrix} 0 & -i \\ i & 0 \end{pmatrix}, \qquad
+Z = \begin{pmatrix} 1 & 0 \\ 0 & -1 \end{pmatrix}
+$$
+
+$$
+H = \frac{1}{\sqrt2}\begin{pmatrix} 1 & 1 \\ 1 & -1 \end{pmatrix}, \qquad
+S = \begin{pmatrix} 1 & 0 \\ 0 & i \end{pmatrix}, \qquad
+T = \begin{pmatrix} 1 & 0 \\ 0 & e^{i\pi/4} \end{pmatrix}
+$$
+
+$$
+R_X(\theta) = \begin{pmatrix} \cos\frac\theta2 & -i\sin\frac\theta2 \\ -i\sin\frac\theta2 & \cos\frac\theta2 \end{pmatrix}, \quad
+R_Y(\theta) = \begin{pmatrix} \cos\frac\theta2 & -\sin\frac\theta2 \\ \sin\frac\theta2 & \cos\frac\theta2 \end{pmatrix}, \quad
+R_Z(\lambda) = \begin{pmatrix} e^{-i\lambda/2} & 0 \\ 0 & e^{i\lambda/2} \end{pmatrix}
+$$
 
 Связи между гейтами полезно знать: $H = \frac{X+Z}{\sqrt2}$; $HZH = X$; $S^\dagger$ — обратный к S; $R_Z(\lambda)$ отличается от чистого фазового умножения лишь глобальной фазой.
 

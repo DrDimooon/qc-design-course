@@ -61,7 +61,11 @@ tags: [flashcards, spaced-repetition, quantum-country, review, mnemonics]
 </details>
 
 ### 00.03 — Не всякая матрица — гейт
-**Q:** Почему матрица $M = \begin{pmatrix} 1 & 1 \\ 0 & 1 \end{pmatrix}$ не может быть квантовым гейтом?
+**Q:** Почему матрица
+
+$$M = \begin{pmatrix} 1 & 1 \\ 0 & 1 \end{pmatrix}$$
+
+не может быть квантовым гейтом?
 <details markdown="1">
 <summary>Ответ</summary>
 
@@ -157,7 +161,7 @@ Z (то же, что $R_Z(\pi)$): смена знака амплитуды пр�
 <details markdown="1">
 <summary>Ответ</summary>
 
-$\text{SWAP}_{ab} = \text{CNOT}_{ab} \cdot \text{CNOT}_{ba} \cdot \text{CNOT}_{ab}$ — три двухкубитных гейта. Поэтому каждая вставка SWAP при routing — три статьи расхода из error budget, а не одна.
+$\mathrm{SWAP}_{ab} = \mathrm{CNOT}_{ab} \cdot \mathrm{CNOT}_{ba} \cdot \mathrm{CNOT}_{ab}$ — три двухкубитных гейта. Поэтому каждая вставка SWAP при routing — три статьи расхода из error budget, а не одна.
 Источник: [02-gates-circuits.md](../curriculum/01-quantum-basics/02-gates-circuits.md)
 </details>
 
