@@ -1,14 +1,14 @@
 """Проверка целостности документации курса.
 
 Что проверяет:
-  1. frontmatter (YAML между ---) у всех файлов курса;
+  1. frontmatter (YAML между ---) и обязательные ключи;
   2. парность fence-маркеров (``` / ~~~);
-  3. существование локальных ссылок (вне блоков кода) — битых быть не должно;
-  4. наличие атрибута markdown="1" у открывающих тегов <details> — иначе
-     содержимое блока попадёт в HTML как сырой текст;
-  5. атрибут class у кастомных адмонишенов (analogy / intuition / red-flag /
-     practically) — без него не применится цветовая схема из
-     assets/styles/admonitions.css.
+  3. локальные ссылки (вне блоков кода) — битых быть не должно;
+  4. блоки <details>: без markdown="1" после </summary> нужна пустая строка,
+     иначе содержимое не разберётся как markdown (ни на сайте, ни на GitHub);
+  5. кастомные адмонишены (analogy / intuition / red-flag / practically)
+     объявлены в HTML-структуре с markdown="1";
+  6. за маркером виджета <!--qc-embed: …--> идёт видимая ссылка «**Интерактив:** …».
 
 Запуск:
     python tools/check_docs.py           # проверка всего репозитория
@@ -24,13 +24,14 @@ import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SKIP_DIRS = {".git", "site", ".site-build", "node_modules", "__pycache__", ".venv", "venv"}
-SKIP_FILES = {"AUDIT-NOTES.md"}  # рабочий журнал аудита, не часть курса
-
-FENCE = re.compile(r"^\s*(```|~~~)")
-DETAILS_OPEN = re.compile(r"^\s*<details(\s|>)")
-LINK = re.compile(r"\[[^\]]*\]\(([^)\s]+(?:\s+[\"'][^\"']+[\"'])?)\)")
+SKIP_FILES = {"AUDIT-NOTES.md"}
 FM_KEYS = ("title", "module", "difficulty", "duration", "status", "tags")
 CUSTOM_TYPES = ("analogy", "intuition", "red-flag", "practically")
+
+FENCE = re.compile(r"^\s*(```|~~~)")
+LINK = re.compile(r"\[[^\]]*\]\(([^)\s]+(?:\s+[\"'][^\"']+[\"'])?)\)")
+SUMMARY = re.compile(r"<summary>")
+DETAILS = re.compile(r"<details\b")
 
 
 def md_files() -> list[str]:
@@ -44,13 +45,13 @@ def md_files() -> list[str]:
 
 
 def check_file(path: str) -> list[str]:
-    rel = os.path.relpath(path, ROOT)
+    rel = os.path.relpath(path, ROOT).replace("\\", "/")
     text = open(path, encoding="utf-8").read()
     lines = text.splitlines()
     problems: list[str] = []
+    is_service = rel.startswith(".github/") or rel in ("INTERACTIVE.md", "STYLEGUIDE.md")
 
-    # 1. frontmatter (у служебных файлов .github/ он не нужен — это не страницы курса)
-    is_service = rel.replace("\\", "/").startswith(".github/")
+    # 1. frontmatter
     if lines and lines[0].strip() == "---":
         end = next((i for i in range(1, min(40, len(lines))) if lines[i].strip() == "---"), None)
         if end is None:
@@ -60,24 +61,23 @@ def check_file(path: str) -> list[str]:
             for key in FM_KEYS:
                 if not re.search(rf"^{key}\s*:", fm, re.M):
                     problems.append(f"{rel}:2: в frontmatter нет ключа «{key}»")
-    else:
-        if not is_service:
-            problems.append(f"{rel}:1: нет frontmatter")
+    elif not is_service:
+        problems.append(f"{rel}:1: нет frontmatter")
 
     # 2. fence-маркеры
     if len(FENCE.findall(text)) % 2 != 0:
         problems.append(f"{rel}:1: нечётное число fence-маркеров (код-блок не закрыт)")
 
     in_code = False
+    open_tag = ""          # последняя встретившаяся строка с <details …>
     for i, line in enumerate(lines, 1):
-        # 3-4. ссылки и <details> — только вне блоков кода
         if FENCE.match(line):
             in_code = not in_code
             continue
         if in_code:
             continue
-        if DETAILS_OPEN.match(line) and "markdown=" not in line:
-            problems.append(f"{rel}:{i}: <details> без markdown=\"1\" (содержимое не отрендерится как markdown)")
+
+        # 3. локальные ссылки
         for m in LINK.finditer(line):
             target = m.group(1).split(" ")[0].strip()
             if target.startswith(("#", "http://", "https://", "mailto:")):
@@ -88,18 +88,21 @@ def check_file(path: str) -> list[str]:
             if not os.path.exists(os.path.normpath(os.path.join(os.path.dirname(path), target))):
                 problems.append(f"{rel}:{i}: битая локальная ссылка -> {target}")
 
-    # 5. кастомные адмонишены в раскрытом виде: класс `admonition` и тип
-    #    добавляет расширение admonition, поэтому достаточно `!!! тип "..."`.
-    #    Отдельно следим, чтобы в тексте не осталось «сырых» конструкций вида
-    #    `??? тип "..."` для кастомных типов: pymdownx.details не добавит им
-    #    класс admonition, и цветовая схема не применится.
-    for m in re.finditer(r"^\?\?\?\s+([a-z\-]+)", text, re.M):
-        if m.group(1) in CUSTOM_TYPES:
-            problems.append(f"{rel}: «??? {m.group(1)}» не получит класс admonition — "
-                            f"используйте <details class=\"admonition {m.group(1)}\" markdown=\"1\">")
-    # 6. маркер виджета должен сопровождаться видимой ссылкой
-    #    (в служебных файлах .github/ и в документации примеры — пропускаем)
-    if not rel.replace("\\", "/").startswith((".github/", "INTERACTIVE.md", "STYLEGUIDE.md")):
+        # 4-5. блоки <details>
+        if DETAILS.search(line) and "`" not in line:
+            open_tag = line
+            if "class=" in line and "markdown=" not in line:
+                problems.append(f"{rel}:{i}: у <details> с классом адмонишена нужен markdown=\"1\"")
+        if SUMMARY.search(line) and line.rstrip().endswith("</summary>") and "`" not in line:
+            owner = line if DETAILS.search(line) else open_tag
+            if 'markdown="1"' not in owner:
+                nxt = lines[i].strip() if i < len(lines) else ""
+                if nxt:
+                    problems.append(f"{rel}:{i}: после <summary> нужна пустая строка, "
+                                    f"иначе содержимое блока не отрендерится как markdown")
+
+    # 6. маркер виджета -> видимая ссылка
+    if not is_service:
         for i, line in enumerate(lines):
             if "<!--qc-embed:" in line:
                 window = " ".join(lines[i:i + 4])
@@ -119,13 +122,14 @@ def main() -> int:
     for f in files:
         problems.extend(check_file(f))
 
-    for p in problems:
-        print("  ", p)
+    if not args.quiet:
+        for p in problems:
+            print("  ", p)
     print(f"проверено файлов: {len(files)}; замечаний: {len(problems)}")
     if problems:
         print("НЕЛЬЗЯ ПУБЛИКОВАТЬ: исправьте замечания выше")
         return 1
-    print("OK: ссылки, блоки кода и frontmatter в порядке")
+    print("OK: ссылки, блоки кода, frontmatter и врезки в порядке")
     return 0
 
 
