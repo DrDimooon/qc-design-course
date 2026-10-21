@@ -9,7 +9,7 @@ abstract: >-
 type: dataset
 license: MIT
 repository-code: "https://github.com/DrDimooon/qc-design-course"
-url: "https://github.com/DrDimooon/qc-design-course"
+url: "https://drdimooon.github.io/qc-design-course/"
 authors:
   - name: "DrDimooon"
 keywords:

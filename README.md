@@ -10,12 +10,12 @@ tags: [quantum-computing, qiskit, curriculum, systems-design, optimization]
 # QC: Проектирование и оптимизация квантовых компьютеров
 
 [![CI](https://github.com/DrDimooon/qc-design-course/actions/workflows/check.yml/badge.svg)](https://github.com/DrDimooon/qc-design-course/actions/workflows/check.yml)
-[![Сайт](https://img.shields.io/badge/сайт-онлайн-3f51b5)](https://dr-dimooon.github.io/qc-design-course/)
+[![Сайт](https://img.shields.io/badge/сайт-онлайн-3f51b5)](https://drdimooon.github.io/qc-design-course/)
 [![Лицензия: MIT](https://img.shields.io/badge/Лицензия-MIT-yellow.svg)](LICENSE)
 
 Учебный репозиторий-курс, посвящённый проектированию и оптимизации квантовых компьютеров (quantum computing design and optimization): от линейной алгебры и основ Qiskit до внутренней работы транспилятора (transpiler), алгоритмов роутинга/маппинга Sabre и сопоставления аппаратных платформ.
 
-> **Читать курс удобнее на сайте:** <https://dr-dimooon.github.io/qc-design-course/> — там формулы, схемы, врезки и интерактивные виджеты отрисовываются полностью. В этом репозитории лежат исходники `.md`, и их вид зависит от просмотрщика (GitHub, редактор), из-за чего часть формул может выглядеть иначе; правила совместимости — в [STYLEGUIDE.md](STYLEGUIDE.md).
+> **Читать курс удобнее на сайте:** <https://drdimooon.github.io/qc-design-course/> — там формулы, схемы, врезки и интерактивные виджеты отрисовываются полностью. В этом репозитории лежат исходники `.md`, и их вид зависит от просмотрщика (GitHub, редактор), из-за чего часть формул может выглядеть иначе; правила совместимости — в [STYLEGUIDE.md](STYLEGUIDE.md).
 
 > **Локальный просмотр с полным оформлением:** `python tools/build_site.py --serve` → <http://127.0.0.1:8000>. В редакторе картинки могут не показываться: относительные пути (`../../assets/…`) редакторы обычно разрешают от корня проекта, а не от папки файла.
 

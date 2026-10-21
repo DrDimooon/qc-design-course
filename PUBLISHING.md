@@ -41,7 +41,7 @@ git push -u origin main
 | Описание | «Учебный курс по проектированию и оптимизации квантовых компьютеров: 7 модулей, лабы, каты, проекты, экзамены» / «An engineering course on designing and optimizing quantum computers — modules, labs, katas, projects» |
 | Темы (topics) | `quantum-computing`, `qiskit`, `quantum-error-correction`, `education`, `course`, `russian` |
 | Лицензия | MIT (файл `LICENSE` уже в репозитории) |
-| Сайт (в настройках) | `https://dr-dimooon.github.io/qc-design-course/` |
+| Сайт (в настройках) | `https://drdimooon.github.io/qc-design-course/` |
 
 ### Что выбрать в форме создания репозитория
 

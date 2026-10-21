@@ -79,7 +79,7 @@ tags: [progress, tracking]
 - [ ] [01-how-to-read-paper](curriculum/06-publications/01-how-to-read-paper.md)
 - [ ] [02-anthropic-efficient-circuits](curriculum/06-publications/02-anthropic-efficient-circuits.md)
 - [ ] [03-google-willow-qec](curriculum/06-publications/03-google-willow-qec.md)
-- [ ] [Ключи к урокам модуля 06](curriculum/06-publications/answers/README.md) — ответы вынесены из уроков в отдельные файлы (по схеме tests/answers)
+- [ ] [Ключи к урокам модуля 06](curriculum/06-publications/answers/) — ответы вынесены из уроков в отдельные файлы (по схеме tests/answers)
 
 ## Итоговые тесты
 
