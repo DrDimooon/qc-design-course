@@ -198,7 +198,7 @@ QC/
 
 В frontmatter (поле `module`) модули подписаны короткими метками — `00 Основы`, `01 Квантовые основы`, `02 Программирование`, `03 Алгоритмы`, `04 Проектирование систем`, `05 Железо`, `06 Разборы публикаций`; это тот же порядок, что и в `curriculum/`, а названия в таблице выше — читательские заголовки разделов. Вне модулей метки вида `Тесты`, `Каты`, `Проекты`, `Сертификация`, `Итоговый` означают тип материала.
 
-Дополнительно: [проекты](projects/README.md), [тесты и экзамен](tests/00-quiz.md) (оглавление тестов начинается с 00-quiz), [ресурсы](resources/courses.md) — включая каталоги [видеолекций](resources/video-lectures.md), [статей и блогов](resources/articles.md), страницу [советов практиков](resources/practitioner-tips.md) и [стил-гайд оформления](STYLEGUIDE.md) (таксономия визуальных блоков и правила плотности). Итоговые проверки: [tests/certification-quiz.md](tests/certification-quiz.md) и [tests/final-exam.md](tests/final-exam.md). Публикация репозитория и сайта — по инструкции в [PUBLISHING.md](PUBLISHING.md).
+Дополнительно: [проекты](projects/README.md), [тесты и экзамен](tests/00-quiz.md) (оглавление тестов начинается с 00-quiz), [ресурсы](resources/courses.md) — включая каталоги [видеолекций](resources/video-lectures.md), [статей и блогов](resources/articles.md), страницу [советов практиков](resources/practitioner-tips.md), [стил-гайд оформления](STYLEGUIDE.md) (таксономия визуальных блоков и правила плотности) и [CONTRIBUTING.md](CONTRIBUTING.md) (как предлагать правки). Итоговые проверки: [tests/certification-quiz.md](tests/certification-quiz.md) и [tests/final-exam.md](tests/final-exam.md). Публикация репозитория и сайта — по инструкции в [PUBLISHING.md](PUBLISHING.md).
 
 ## Как учиться
 
