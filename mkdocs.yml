@@ -48,9 +48,11 @@ extra_css:
   - assets/styles/admonitions.css
 
 extra_javascript:
-  - https://unpkg.com/mermaid@10/dist/mermaid.min.js
+  # Библиотеки лежат в репозитории: сайт не зависит от доступности CDN
+  # (внешний CDN мог не открыться — тогда формулы и схемы не рисовались).
+  - assets/vendor/mermaid/mermaid.min.js
   - assets/js/mermaid-init.js
-  - https://unpkg.com/mathjax@3/es5/tex-mml-chtml.js
+  - assets/vendor/mathjax/tex-mml-chtml.js
 
 nav:
   - Введение:

@@ -28,7 +28,7 @@ tags: [publications, paper-reading, reproduction, cost-model, literature-review,
 | 2 | [Разбор: Claude проектирует квантовые цепи эффективнее готовых](02-anthropic-efficient-circuits.md) | Closed loop «модель → внешний валидатор → оценка → улучшение»; два ограничения квантовой цепи (нет ветвления, всё обратимо); разбор двух конкретных результатов — обратимая модулярная инверсия и декодер Рида-Соломона | ~3–4 ч |
 | 3 | [Разбор: Google Willow — порог поверхностного кода](03-google-willow-qec.md) | Как читается формула Λ; слой декодера и его латентность; воспроизведение поверхностного кода на ноутбуке (Stim + PyMatching); как испортить такой бенчмарк и как это ловить | ~3 ч |
 
-К каждому уроку есть отдельный файл с ключами (обзор — в [README ключей](answers/README.md)): [answers/01-how-to-read-paper.md](answers/01-how-to-read-paper.md), [answers/02-anthropic-efficient-circuits.md](answers/02-anthropic-efficient-circuits.md), [answers/03-google-willow-qec.md](answers/03-google-willow-qec.md) — по той же схеме, что ключи к тестам в [tests/answers/](../../tests/answers/). Сначала ответьте сами, потом открывайте.
+К каждому уроку есть отдельный файл с ключами (обзор — в [README ключей](answers/README.md)): [answers/01-how-to-read-paper.md](answers/01-how-to-read-paper.md), [answers/02-anthropic-efficient-circuits.md](answers/02-anthropic-efficient-circuits.md), [answers/03-google-willow-qec.md](answers/03-google-willow-qec.md) — по той же схеме, что ключи к тестам в [tests/answers/](../../tests/answers/README.md). Сначала ответьте сами, потом открывайте.
 
 Итого: **~8–10 часов** на модуль, включая время на самостоятельную реплику.
 

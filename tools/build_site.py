@@ -55,18 +55,31 @@ def expand_widgets(docs_root: Path) -> int:
         text = md.read_text(encoding="utf-8")
         if "qc-embed:" not in text:
             continue
+        # маркеры внутри блоков кода — примеры в документации, их не раскрываем
+        parts = text.split("\n")
+        in_code = False
+        for i, line in enumerate(parts):
+            if line.lstrip().startswith("```"):
+                in_code = not in_code
+                continue
+            if in_code or "qc-embed:" not in line:
+                continue
 
-        def repl(m: re.Match) -> str:
-            target = docs_root / "assets" / "interactive" / m.group("name").strip()
-            rel = Path(os.path.relpath(target, md.parent)).as_posix()
-            return (
-                f'<iframe class="qc-embed" src="{rel}" title="{m.group("title").strip()}" '
-                f'height="{m.group("h").strip()}" loading="lazy"></iframe>'
-            )
+            def repl(m: re.Match) -> str:
+                target = docs_root / "assets" / "interactive" / m.group("name").strip()
+                # ВАЖНО: на сайте адрес страницы — каталог с завершающим «/»
+                # (use_directory_urls), то есть на один уровень глубже файла-исходника.
+                # Поэтому относительный путь считаем от «папки URL», а не от папки файла.
+                url_dir = md.parent / md.stem
+                rel = Path(os.path.relpath(target, url_dir)).as_posix()
+                return (
+                    f'<iframe class="qc-embed" src="{rel}" title="{m.group("title").strip()}" '
+                    f'height="{m.group("h").strip()}" loading="lazy"></iframe>'
+                )
 
-        new_text = WIDGET_RE.sub(repl, text)
-        md.write_text(new_text, encoding="utf-8")
-        count += len(WIDGET_RE.findall(text))
+            parts[i] = WIDGET_RE.sub(repl, line)
+            count += len(WIDGET_RE.findall(line))
+        md.write_text("\n".join(parts), encoding="utf-8")
     return count
 
 
