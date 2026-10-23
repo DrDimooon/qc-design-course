@@ -1,0 +1,19 @@
+# Проверенный набор для учебного кода курса.
+# Снимок окружения аудита 2026-10-22 (Python 3.13):
+#   pip install -r requirements.txt
+# Минимальные версии курс примет и новее, если примеры продолжат работать;
+# при поломке API см. требования соответствующей лабы (например, qiskit-nature
+# >= 0.8 для проекта 03-vqe-h2).
+
+numpy>=2.5.4
+scipy>=1.14
+qiskit>=2.6.0
+qiskit-aer>=0.18.0
+qiskit-ibm-runtime>=0.50.0
+matplotlib>=3.9
+
+# --- extras (ставить только для нужных треков) ---
+# Химия / VQE (проект 03-vqe-h2):
+#   pip install qiskit-nature[pyscf]>=0.8.0
+# Разбор Willow / QEC (урок 06.03):
+#   pip install stim>=1.16.0 pymatching>=2.4.0

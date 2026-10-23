@@ -57,14 +57,39 @@ $$H \approx -1.0524\,II + 0.3979\,IZ - 0.3980\,ZI - 0.0113\,ZZ + 0.1809\,XX.$$
 
 Обратите внимание на порядок операторов: в записи O'Malley et al. (и в выводе
 `ParityMapper` из Qiskit Nature) получается `+0.3979·IZ − 0.3980·ZI` — положительный
-коэффициент стоит при IZ, отрицательный при ZI. Перестановка этих двух слагаемых
-в формальном виде меняет матрицу гамильтониана (спектр при округлённых
-коэффициентах слегка отличается), хотя энергия основного состояния почти та же.
-Сверяйте свой гамильтониан с `mapper.map(problem.second_q_ops()[0])`, а не «на глаз».
+коэффициент стоит при IZ, отрицательный при ZI. Перестановка этих двух слагаемых — это
+переименование кубитов конъюгацией SWAP (II, ZZ, XX при этом неизменны), поэтому
+**спектр и минимум гамильтониана не меняются точно** — меняются лишь представление и
+соответствие собственных векторов базисным строкам. Важно не «какие числа», а согласованная
+нумерация кубитов между гамильтонианом и анзацем: сверяйте свой гамильтониан с
+`mapper.map(problem.second_q_ops()[0])`, а не «на глаз».
 
 ### Шаг 3. Анзац
 
-Основной (физически осмысленный): `UCCSD(problem, mapper)`. Простой вариант: `EfficientSU2(2, reps=2)` или ручной анзац вида `$R_{Y,\theta} R_{Z,\phi}$ + CX + $R_{Y,\theta} R_{Z,\phi}$ + CX`. Сравните число параметров и скорость сходимости.
+Основной (физически осмысленный): `UCCSD` — но с сигнатурой qiskit-nature 0.8 (первые аргументы
+— числа орбиталей и частиц, а не объект problem):
+
+```python
+from qiskit_nature.units import DistanceUnit
+from qiskit_nature.second_q.mappers import ParityMapper
+from qiskit_nature.second_q.circuit.library import UCCSD, HartreeFock
+
+problem  # ElectronicStructureProblem с шага 1
+mapper   = ParityMapper(num_particles=problem.num_particles)  # 2-кубитная редукция
+
+hf    = HartreeFock(problem.num_spatial_orbitals, problem.num_particles, mapper)
+ansatz = UCCSD(
+    num_spatial_orbitals=problem.num_spatial_orbitals,
+    num_particles=problem.num_particles,
+    qubit_mapper=mapper,
+    initial_state=hf,
+)
+```
+
+Согласуйте ширину с редуцированным гамильтонианом (для H₂/STO-3G с Parity-редукцией это 2
+кубита; HartreeFock обязан использовать тот же mapper, иначе расхождение ширин). Простой
+вариант: `EfficientSU2(2, reps=2)` или ручной анзац вида `$R_{Y,\theta} R_{Z,\phi}$ + CX +
+$R_{Y,\theta} R_{Z,\phi}$ + CX`. Сравните число параметров и скорость сходимости.
 
 ### Шаг 4. Оптимизаторы
 
@@ -96,7 +121,11 @@ print(result.fun)                                # лучший найденны
 
 ### Шаг 6. (опционально) Шум и полная энергия
 
-Прогоните SPSA на шумной оценке ⟨H⟩: соберите `NoiseModel` + `AerSimulator` (подробности — в [уроке о шумовой симуляции](../curriculum/02-programming/04-noise-simulation.md)) или подставьте прошивку `EstimatorV2` из qiskit-ibm-runtime против FakeSherbrooke; seed фиксирован. Поясните, почему SPSA ведёт себя лучше. Затем добавьте отталкивание ядер E_nn = 1/R (в Ha) и сверьте выходное значение с −1.137 Ha.
+Прогоните SPSA на шумной оценке ⟨H⟩: соберите `NoiseModel` + `AerSimulator` (подробности — в [уроке о шумовой симуляции](../curriculum/02-programming/04-noise-simulation.md)) или подставьте прошивку `EstimatorV2` из qiskit-ibm-runtime против FakeSherbrooke; seed фиксирован. Поясните, почему SPSA ведёт себя лучше. Затем добавьте отталкивание ядер и сверьте выходное значение с −1.137 Ha. **Обязательная привязка единиц:** расстояние геометрии задано в ангстремах, но энергия в Ha — атомные единицы длины, поэтому
+
+$$R_{\text{bohr}} = \frac{R_{\text{Å}}}{0{,}5291772109}, \qquad \texttt{R = 0.735 / 0.5291772109;} \quad \texttt{E\_nn = 1/R} \approx 0{,}720\ \text{Ha}$$
+
+(при $R = 0{,}735\ \text{Å} \to R \approx 1{,}389$ bohr). Прямая подстановка $0{,}735$ в $1/R$ даёт $\approx 1{,}36$ Ha — типичная систематическая ошибка для этого шага. Надёжнее взять готовое `problem.nuclear_repulsion_energy` из PySCF — оно уже в Ha.
 
 ## Критерии приёмки
 

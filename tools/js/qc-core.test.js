@@ -71,7 +71,7 @@ check(
   )
 );
 
-console.log('qc-core: повороты Расбека');
+console.log('qc-core: повороты Раби');
 const rz = QC.GATES.rz(Math.PI);
 const rzOut = QC.sv.apply1(QC.sv.basis(1, 0), rz, 0, 1);
 check('Rz(pi)|0> = -i|0> (глобальная фаза)', vecClose(rzOut, [QC.C(0, -1), QC.C(0, 0)], 1e-12));

@@ -139,6 +139,10 @@ def evaluate(candidate: QuantumCircuit, target: QuantumCircuit) -> dict:
         return {"correct": False, "reason": "не тот оператор"}
     ops = candidate.count_ops()
     total = sum(ops.values())
+    # защита от тривиального прохода: если целевой оператор тождественный,
+    # пустая схема формально эквивалентна и «стоит» ноль — это не решение
+    if total == 0:
+        return {"correct": False, "reason": "пустая схема: тривиальное решение"}
     return {
         "correct": True,
         "qubits": candidate.num_qubits,
@@ -149,7 +153,7 @@ def evaluate(candidate: QuantumCircuit, target: QuantumCircuit) -> dict:
     }
 ```
 
-**Шаг 2. Задать спецификацию.** Возьмите обратимую функцию, результат которой нужно «расплести» обратно: приготовить состояние Белла $\lvert\Phi^+\rangle = (\lvert 00\rangle + \lvert 11\rangle)/\sqrt 2$ и вернуть систему в исходное состояние $\lvert 00\rangle$. Целевой оператор — тождественный.
+**Шаг 2. Задать спецификацию.** Возьмите пару «вычислить — расплести»: приготовить состояние Белла $\lvert\Phi^+\rangle = (\lvert 00\rangle + \lvert 11\rangle)/\sqrt 2$ из $\lvert 00\rangle$, затем «расплести» обратно к $\lvert 00\rangle$. Целевая оператор — тождественный. Аккуратно: для identity-спецификации пустая схема формально корректна и даёт ноль гейтов — «оптимум» схлопывается в тривиальность, поэтому в `evaluate` выше стоит защитная проверка `total == 0`.
 
 ```python
 identity = QuantumCircuit(2)          # целевой оператор: ничего не меняем

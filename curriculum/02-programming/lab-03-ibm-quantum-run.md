@@ -44,10 +44,18 @@ bell.h(0); bell.cx(0, 1); bell.measure([0, 1], [0, 1])
 
 tbell = transpile(bell, backend, optimization_level=2, seed_transpiler=0)
 
-with Session(backend=backend) as session:
-    sampler = SamplerV2(mode=session)
-    job = sampler.run([tbell], shots=4096)
-    result = job.result()
+# Основной сценарий — job mode: у free/Open Plan нет права отправлять
+# session-задания (Open Plan ограничен job/batch), поэтому Sampler
+# привязывается прямо к бэкенду:
+sampler = SamplerV2(mode=backend)          # job mode: mode=backend
+job = sampler.run([tbell], shots=4096)
+result = job.result()
+
+# Session (пакетное исполнение групп заданий с минимальной задержкой между ними)
+# доступен на платных планах — отдельный вариант для платного доступа:
+# with Session(backend=backend) as session:
+#     sampler = SamplerV2(mode=session)
+#     ...
 ```
 
 > **О deprecation.** В qiskit-ibm-runtime 0.50 класс `SamplerV2` помечен как deprecated (удаление — не раньше чем через 3 месяца после релиза): его преемник — `qiskit_ibm_runtime.executor_sampler.Sampler`, который выполняет пред- и постобработку на стороне клиента. Пока работаете с `SamplerV2`, просто держите в уме, что в следующем мажорном релизе импорт придётся поменять; сам код запуска при этом не меняется.

@@ -30,14 +30,28 @@
       sequence: { useMaxWidth: false, wrap: true },
       themeVariables: { fontSize: '15px' }
     });
-    window.mermaid.run({ querySelector: '.mermaid' });
+    // Идемпотентность: рендерим только необработанные блоки — уже
+    // отрисованные mermaid помечает атрибутом data-processed, и
+    // повторные вызовы (document$ срабатывает на каждой внутренней
+    // навигации) уже отрисованные схемы не трогают.
+    // Каждый блок отдельно: сбой одной схемы с синтаксической ошибкой
+    // не должен ломать отрисовку остальных.
+    var pending = document.querySelectorAll('.mermaid:not([data-processed])');
+    for (var i = 0; i < pending.length; i++) {
+      try {
+        window.mermaid.run({ nodes: [pending[i]] });
+      } catch (e) {
+        console.warn('mermaid block failed:', e);
+      }
+    }
   }
 
+  // Двойная инициализация: document$ в Material срабатывает и на первой
+  // загрузке, и на каждой внутренней навигации. Если он доступен, слушаем
+  // только его, иначе fallback на стандартные события документа.
   if (typeof window.document$ !== 'undefined') {
     window.document$.subscribe(init);
-  }
-
-  if (document.readyState === 'loading') {
+  } else if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init);
   } else {
     init();

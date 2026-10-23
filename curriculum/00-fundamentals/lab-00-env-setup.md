@@ -105,6 +105,8 @@ print(counts)
 
 Симулятор `qiskit-aer` уже установлен в шаге 3 — если импорт `from qiskit_aer import AerSimulator` падает, поставьте его отдельно: `pip install qiskit-aer`.
 
+В корне репозитория есть единый проверенный набор зависимостей: [requirements.txt](../../requirements.txt) (снимок аудита 2026-10-22: Qiskit 2.6, Aer 0.18, runtime 0.50, Nature 0.8; qiskit-nature и stim/pymatching идут отдельными extras — смотрите комментарии в файле). Если вы идёте по шагам этого урока — устанавливайте построчно через `pip install`; если хотите один командой — `pip install -r requirements.txt`. Обратная проверка окружения: `pip freeze | findstr qiskit` (Windows) / `pip freeze | grep qiskit` (Linux, macOS).
+
 Ожидаемый вывод — примерно поровну:
 
 ```
@@ -113,7 +115,7 @@ print(counts)
 
 Результаты `01` и `10` отсутствуют: кубиты запутаны в состояние Белла $\frac{|00\rangle + |11\rangle}{\sqrt{2}}$ — измерения идеально коррелируют, хотя каждое в отдельности случайно. Это первая наблюдаемая демонстрация запутанности; теория — в [уроке о запутанности](../01-quantum-basics/03-entanglement-measurement.md).
 
-Что произошло с точки зрения теории: $|00\rangle \xrightarrow{H\text{ на }q0} \frac{|00\rangle + |10\rangle}{\sqrt{2}} \xrightarrow{\text{CNOT}} \frac{|00\rangle + |11\rangle}{\sqrt{2}}$.
+Что произошло с точки зрения теории (строка ket в Qiskit читается как $q_1q_0$, старший бит слева): $|q_1 q_0\rangle = |00\rangle \xrightarrow{H \text{ на } q_0} \frac{|q_1 q_0\rangle = |00\rangle + |01\rangle}{\sqrt{2}} \xrightarrow{\text{CNOT}(q_0 \to q_1)} \frac{|00\rangle + |11\rangle}{\sqrt{2}}$. Здесь важно не перепутать порядок проводов: в этом пояснении по-Qiskit-овски старший бит ($q_1$) пишется слева, поэтому промежуточные слагаемые — $|00\rangle$ и $|01\rangle$, а не $|00\rangle$ и $|10\rangle$. В виджетах курса порядок иной (первый аргумент слева), так что сравнивайте формулы только при явно подписанном порядке.
 
 ## Альтернативный вариант через Jupyter
 

@@ -87,6 +87,34 @@ def greedy_route(qc, cm):
 
 ## Сравнение с SabreSwap
 
+**Ячейка контекста (обязательная, если лаба запускается не вслед за lab-04).** Ниже используются `build_qaoa`, `edges`, `gamma`/`beta_s` и `line` из lab-04; чтобы нижние блоки выполнялись без NameError, вставьте сразу перед ними эту ячейку — она либо подтянет значения в текущем namespace, либо восстановит их с нуля:
+
+```python
+try:
+    build_qaoa, edges, gamma, beta_s, line   # pylint: disable=used-before-assignment
+except NameError:
+    import numpy as np
+    from qiskit import QuantumCircuit
+    from qiskit.transpiler import CouplingMap
+
+    edges = [(0, 1), (1, 2), (2, 3), (3, 4), (4, 5), (5, 0), (0, 3), (1, 4)]
+    gamma, beta_s = 0.6, 0.35
+
+    def build_qaoa(num_qubits, edges, gamma, beta):
+        qc = QuantumCircuit(num_qubits)
+        qc.h(range(num_qubits))
+        for layer in range(2):
+            for a, b in edges:
+                qc.cx(a, b)
+                qc.rz(2 * gamma, b)
+                qc.cx(a, b)
+            qc.rx(2 * beta, range(num_qubits))
+        qc.measure_all()
+        return qc
+
+    line = CouplingMap.from_line(6)
+```
+
 Берём QAOA-схему 6 кубитов (из lab-04) и сравниваем два сценария: (1) наш greedy router, (2) `SabreSwap` на том же layout'е. Сравниваем число SWAP, depth и время.
 
 ```python

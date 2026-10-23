@@ -32,7 +32,7 @@ tags: [qiskit, transpiler, benchmarking, coupling-map, depth, swaps, noise-aware
 
 ### Шаг 1. Окружение
 
-`pip install "qiskit[aer]" matplotlib`, Qiskit >= 1.0. Зафиксируйте версии (requirements.txt).
+`pip install qiskit qiskit-aer matplotlib` (у Qiskit нет extra `qiskit[aer]` — Aer давно выделился в отдельный пакет `qiskit-aer`), Qiskit >= 1.0. Зафиксируйте версии (requirements.txt).
 
 ### Шаг 2. Набор схем
 
@@ -95,8 +95,43 @@ def metrics(qc):
 
 Оценку времени — через `durations` в Target (если используете фейк-бэкенд:
 `target.durations().get(gate, (q0, q1))` даёт длительность гейта на конкретной паре
-кубитов в единицах бэкенда, а `target[gate][(q0, q1)].duration` — то же в секундах;
-суммируйте их по гейтам схемы).
+кубитов в единицах бэкенда, а `target[gate][(q0, q1)].duration` — то же в секундах).
+
+Два уточнения, чтобы метрики не врали:
+
+1. **«Чистый» вклад роутера — SWAP до basis translation.** В финальной схеме
+   SWAP-гейты могли быть удалены оптимизацией или растворены в 3 CX: сравнивать QFT(5)
+   по финальному `count_ops("swap")` не полностью честно. Захватывайте схему
+   **сразу после routing-стейджа**, поставив callback в пресет-менеджер:
+
+```python
+snapshot_after_routing = {}
+
+def capture_after_routing(pass_, dag, time, property_set, count):
+    cls = type(pass_).__name__
+    if cls in ("SabreSwap", "StochasticSwap", "BasicSwap"):
+        snapshot_after_routing[len(snapshot_after_routing)] = dag.count_ops()
+
+pm = generate_preset_pass_manager(
+    optimization_level=level, coupling_map=cmap,
+    basis_gates=["rz", "sx", "x", "cz"], seed_transpiler=seed,
+    callback=capture_after_routing,
+)
+```
+
+   Если callback не использован, помечайте в таблице, что SWAP-счёт
+   «финальный, после оптимизации между routing и basis» — и это отдельная
+   колонка, а не та же самая.
+
+2. **Сумма длительностей гейтов ≠ makespan.** Σ duration — это «работа»
+   (work): сколько суммарного времени проводит железо, исполняя гейты по
+   очереди. Реальное время исполнения схемы (makespan) определяется
+   расписанием: независимые гейты идут параллельно, а не последовательно,
+   поэтому makespan меньше суммы, обычно около «глубины слоёв × длительность
+   слоя». Для честной оценки используйте scheduling:
+   `transpile(..., scheduling_method="asap")` и `circuit.op_start_times`,
+   либо аппроксимацию «makespan ≈ Σ по слоям max(duration в слое)» — сумму же
+   длительностей никогда не выдавайте за real-time исполнения.
 
 ### Шаг 6. Изобразительное представление
 

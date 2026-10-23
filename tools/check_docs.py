@@ -28,7 +28,8 @@ SKIP_FILES = {"AUDIT-NOTES.md"}
 FM_KEYS = ("title", "module", "difficulty", "duration", "status", "tags")
 CUSTOM_TYPES = ("analogy", "intuition", "red-flag", "practically")
 
-FENCE = re.compile(r"^\s*(```|~~~)")
+FENCE_OPEN = re.compile(r"^(`{3,}|~{3,})")   # открывающий: маркер + необязательный info-string
+FENCE_CLOSE = re.compile(r"^(`{3,}|~{3,})\s*$")  # закрывающий: только маркер (CommonMark)
 LINK = re.compile(r"\[[^\]]*\]\(([^)\s]+(?:\s+[\"'][^\"']+[\"'])?)\)")
 SUMMARY = re.compile(r"<summary>")
 DETAILS = re.compile(r"<details\b")
@@ -42,6 +43,31 @@ def md_files() -> list[str]:
             if name.endswith(".md") and name not in SKIP_FILES:
                 out.append(os.path.join(dirpath, name))
     return sorted(out)
+
+
+def scan_fences(lines: list[str]) -> list[tuple[int, int | None]]:
+    """Построчный разбор код-блоков: [(строка_открытия, строка_закрытия | None)].
+
+    Открывающий маркер — минимум три ``` или ~~~ (можно с info-string),
+    закрывающий — тот же символ, без info-string. Вложенность fence не допускается,
+    как в CommonMark.
+    """
+    blocks: list[tuple[int, int | None]] = []
+    marker: str | None = None
+    start = 0
+    for i, line in enumerate(lines, 1):
+        stripped = line.strip()
+        if marker is None:
+            m = FENCE_OPEN.match(stripped)
+            if m:
+                marker = m.group(1)[0]
+                start = i
+        elif FENCE_CLOSE.match(stripped) and stripped[0] == marker:
+            blocks.append((start, i))
+            marker = None
+    if marker is not None:
+        blocks.append((start, None))
+    return blocks
 
 
 def check_file(path: str) -> list[str]:
@@ -64,17 +90,18 @@ def check_file(path: str) -> list[str]:
     elif not is_service:
         problems.append(f"{rel}:1: нет frontmatter")
 
-    # 2. fence-маркеры
-    if len(FENCE.findall(text)) % 2 != 0:
-        problems.append(f"{rel}:1: нечётное число fence-маркеров (код-блок не закрыт)")
+    # 2. fence-маркеры (провалидировано и негативным контролем --selftest)
+    fence_blocks = scan_fences(lines)
+    for start, end in fence_blocks:
+        if end is None:
+            problems.append(f"{rel}:{start}: код-блок открыт fence-маркером, но не закрыт")
+    code_lines: set[int] = set()
+    for start, end in fence_blocks:
+        code_lines.update(range(start, (end or len(lines) + 1)))
 
-    in_code = False
     open_tag = ""          # последняя встретившаяся строка с <details …>
     for i, line in enumerate(lines, 1):
-        if FENCE.match(line):
-            in_code = not in_code
-            continue
-        if in_code:
+        if i in code_lines:
             continue
 
         # 3. локальные ссылки
@@ -112,10 +139,83 @@ def check_file(path: str) -> list[str]:
     return problems
 
 
+GOOD_DOC = """---
+title: Контроль
+module: selftest
+difficulty: база
+duration: 1 ч
+status: само-проверка
+tags: [selftest]
+---
+
+# Контроль
+
+```python
+print("закрытый блок")
+```
+
+Конец контрольного документа.
+"""
+
+BAD_DOC = """---
+title: Контроль
+module: selftest
+difficulty: база
+duration: 1 ч
+status: само-проверка
+tags: [selftest]
+---
+
+# Контроль
+
+```python
+print("незакрытый блок")
+"""
+
+
+def selftest() -> int:
+    """Негативный и позитивный контроль fence-проверки (E071 из аудита)."""
+    scratch = os.path.join(ROOT, ".selftest-tmp")
+    os.makedirs(scratch, exist_ok=True)
+    good = os.path.join(scratch, "good.md")
+    bad = os.path.join(scratch, "bad.md")
+    with open(good, "w", encoding="utf-8") as f:
+        f.write(GOOD_DOC)
+    with open(bad, "w", encoding="utf-8") as f:
+        f.write(BAD_DOC)
+    try:
+        good_problems = check_file(good)
+        bad_problems = check_file(bad)
+    finally:
+        os.remove(good)
+        os.remove(bad)
+        os.rmdir(scratch)
+
+    good_ok = not good_problems
+    bad_ok = any("не закрыт" in p for p in bad_problems)
+    if not bad_ok:
+        print("selftest: негативный контроль НЕ сработал:")
+        for p in bad_problems:
+            print("   ", p)
+    if not good_ok:
+        print("selftest: позитивный контроль дал ложные замечания:")
+        for p in good_problems:
+            print("   ", p)
+    if good_ok and bad_ok:
+        print("selftest OK: незакрытый код-блок ловится, валидный документ чист")
+        return 0
+    return 1
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Проверка целостности документации")
     parser.add_argument("--quiet", action="store_true", help="только итог")
+    parser.add_argument("--selftest", action="store_true",
+                        help="самопроверка: незакрытый код-блок должен ловиться")
     args = parser.parse_args()
+
+    if args.selftest:
+        return selftest()
 
     files = md_files()
     problems: list[str] = []
