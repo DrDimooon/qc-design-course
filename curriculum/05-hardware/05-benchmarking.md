@@ -2,7 +2,7 @@
 title: "Как измерить качество квантового компьютера"
 module: "05 Железо"
 difficulty: "advanced"
-duration: "~2 ч"
+duration: "~2 ч чтение + 1.5–2 ч calibration exercise"
 status: "draft"
 tags: [benchmarking, randomized-benchmarking, quantum-volume, clops, gate-set-tomography, eplg, layer-fidelity, algorithmic-benchmarks, qiskit-backend]
 ---
@@ -88,25 +88,93 @@ QED-C (Quantum Economic Development Consortium) публикует open-source �
  8. запустить основной job с учётом session/queue бюджета
 ```
 
-Пример чтения бэкенда в Qiskit (Qiskit ≥ 1.0):
+## Практика: чтение calibration snapshot
+
+**1.5–2 ч сверх чтения урока.** Цель — превратить snapshot в небольшую таблицу и обосновать решение для layout/scheduling. Используйте локальный `FakeSherbrooke`: учётная запись и QPU не нужны. Это сохранённые данные устройства, а не текущая калибровка реальной машины.
+
+| Что извлекаем | Где в `Target` | Единицы и интерпретация |
+|---|---|---|
+| T1 / T2 | `qubit_properties[q].t1 / .t2` | секунды в API; в таблице переводим в мкс |
+| Readout error | `target["measure"][(q,)].error` | безразмерная ошибка считывания, не ошибка гейта |
+| Нативный 2q-гейт и ошибка | `target[name][(a, b)].error` | имя из операций с `num_qubits == 2`; ошибка безразмерна |
+| Длительность гейта / измерения | соответствующая `InstructionProperties.duration` | секунды в `Target`, в таблице нс; это не число тактов `dt` |
+| Связность | ключи `(a, b)` нативной операции | допустимые упорядоченные пары; обратное направление не подразумевается |
+| Пропуск | нет свойства, записи или значения | **`None` — неизвестно**, а не ноль и не идеальная операция |
+
+Код возвращает две таблицы (списки словарей). Полный список рёбер используется для выбора максимальной **из известных** 2q-ошибок; вывод ограничен тремя кубитами и тремя парами. Все числа берутся из snapshot. Проверено на Qiskit 2.6.0: у этого `FakeSherbrooke` 127 кубитов и нативный `ecr`; функция использует параметры переданного устройства.
 
 ```python
+# qc: executable
 from qiskit_ibm_runtime.fake_provider import FakeSherbrooke
+
+
+def scaled(value, factor):
+    return None if value is None else value * factor
+
+
+def calibration_tables(backend, limit=3):
+    assert limit > 0
+    target = backend.target
+    names = sorted(n for n in target.operation_names
+                   if target.operation_from_name(n).num_qubits == 2)
+    properties = target.qubit_properties
+    qubits = []
+    for q in range(min(limit, backend.num_qubits)):
+        prop = (properties[q] if properties is not None
+                and q < len(properties) else None)
+        readout = (target["measure"].get((q,))
+                   if "measure" in target.operation_names else None)
+        qubits.append({
+            "q": q,
+            "T1_us": scaled(getattr(prop, "t1", None), 1e6),
+            "T2_us": scaled(getattr(prop, "t2", None), 1e6),
+            "readout_error": getattr(readout, "error", None),
+            "measure_ns": scaled(getattr(readout, "duration", None), 1e9),
+        })
+    edges = []
+    for name in names:
+        for pair, prop in target[name].items():
+            # None key means global support, not a concrete calibrated edge.
+            if pair is None:
+                continue
+            edges.append({
+                "gate": name, "pair": pair,
+                "error": getattr(prop, "error", None),
+                "duration_ns": scaled(getattr(prop, "duration", None), 1e9),
+            })
+    edges.sort(key=lambda row: (row["gate"], row["pair"]))
+    known = [row for row in edges if row["error"] is not None]
+    worst = max(known, key=lambda row: row["error"], default=None)
+    return qubits, edges[:limit], worst, len(edges)
+
+
 backend = FakeSherbrooke()
-target = backend.target
-# родной 2q-гейт и его ошибка на паре (10, 11): у Eagle это "ecr",
-# у Heron, Nighthawk и Google — "cz"
-name_2q = next(n for n in target.operation_names if n in ("ecr", "cz", "cx"))
-err_2q   = target[name_2q][(10, 11)].error
-# ошибка считывания
-err_read = target["measure"][(12,)].error
-# времена когерентности и частота
-props    = target.qubit_properties[5]   # .t1, .t2, .frequency
-# граф связности
-print(backend.coupling_map)
+qubits, pairs, worst, edge_count = calibration_tables(backend)
+assert len(qubits) == min(3, backend.num_qubits)
+assert 0 < len(pairs) <= 3 and edge_count >= len(pairs)
+for row in pairs:
+    prop = backend.target[row["gate"]][row["pair"]]
+    assert len(row["pair"]) == 2
+    assert row["duration_ns"] == scaled(getattr(prop, "duration", None), 1e9)
+    assert row["error"] is None or 0 <= row["error"] <= 1
+assert worst is not None and all(
+    row["error"] is None or worst["error"] >= row["error"] for row in pairs
+)
+assert scaled(None, 1e6) is None
+assert scaled(1e-6, 1e6) == 1.0  # проверка перевода единиц, не калибровка
+print("qubits (us / ns):", qubits)
+print("native pairs (ns):", pairs, "total directed entries:", edge_count)
+print("largest known 2q error:", worst)
 ```
 
-Замечание: ориентируйтесь на BackendV2 `backend.target` (BackendV1 с его `backend.properties()` устарел): readout-ошибка живёт в `target["measure"][(q,)].error`, 2q-ошибка — в записи родного гейта процессора (`"ecr"` у IBM Eagle, `"cz"` у IBM Heron и Nighthawk, а также у Google), времена когерентности — в `target.qubit_properties[q]`; имя родного 2q-гейта всегда берите из `target.operation_names`, а не из конкретного документа.
+**Что сдать:** таблицы и короткое инженерное заключение:
+
+1. Зафиксируйте версии Qiskit/runtime, имя fake backend и происхождение snapshot; обозначьте единицы и все `None`. Для выбранной пары дополните таблицу T1/T2 и readout обоих концов (увеличьте `limit` или прочитайте их напрямую). Не заменяйте пропуски нулями.
+2. Сравните длительность нативного 2q-гейта с T1/T2 его кубитов в **одних единицах**; объясните связь с простоем и scheduling. Отношение длительности к T1 — ориентир для модели релаксации, а не измеренная fidelity схемы. Для плотностной матрицы и каналов шума используйте уже изученный [материал о шуме](../02-programming/04-noise-simulation.md).
+3. Выберите две доступные пары, сравните ошибки, длительности и readout концов; объясните, почему минимум 2q-error не гарантирует лучший layout для всего workload. Отдельно назовите пару с максимальной известной ошибкой и перечислите данные, которых не хватает для вывода.
+4. Проверьте направления рёбер в `target[name]`; объясните, как ограничение связности может добавить routing overhead. Сформулируйте одну гипотезу для [noise-aware компиляции](../04-systems-design/04-noise-aware-compilation.md) и укажите, чем её проверять.
+
+**Самопроверка:** есть T1/T2, readout, имя и ошибка нативного 2q-гейта, длительности и связность; единицы согласованы; пропуски явно отмечены; вывод опирается на snapshot и отделён от предсказания результата QPU. Если свойство отсутствует, достаточно назвать ограничение и нужное дополнительное измерение.
 
 ## 📚 Узнать подробнее
 

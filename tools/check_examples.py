@@ -42,6 +42,7 @@ REQUIRED_EXAMPLES = {
     "curriculum/04-systems-design/02-transpiler-internals.md": 2,
     "curriculum/04-systems-design/lab-04-platform-comparison.md": 2,
     "curriculum/04-systems-design/lab-05-sabre-routing.md": 1,
+    "curriculum/05-hardware/05-benchmarking.md": 1,
     "projects/03-vqe-h2.md": 1,
     "tests/answers/final.md": 1,
 }
@@ -139,6 +140,35 @@ class CourseContracts(unittest.TestCase):
         metrics = namespace["metrics"](circuit)
         self.assertEqual(metrics["2q"], 2)
         self.assertEqual(metrics["nonlocal"], 3)
+
+    def test_compiler_exit_inputs_allow_all_twenty_valid_runs(self):
+        from qiskit.transpiler import generate_preset_pass_manager
+        path = ROOT / "tests/compiler-exit-exam.md"
+        inputs = [source for _, source in python_blocks(path)
+                  if "SEEDS = (" in source and "def make_target(" in source]
+        self.assertEqual(len(inputs), 1)
+        namespace = {}
+        exec(compile(inputs[0], str(path), "exec"), namespace)
+        source = namespace["qc"]
+        seen = set()
+        for name, target in namespace["targets"].items():
+            for level in namespace["LEVELS"]:
+                for seed in namespace["SEEDS"]:
+                    with self.subTest(target=name, level=level, seed=seed):
+                        pm = generate_preset_pass_manager(
+                            optimization_level=level, target=target,
+                            initial_layout=[0, 1, 2, 3], seed_transpiler=seed)
+                        output = pm.run(source)
+                        self.assertEqual(output.num_qubits, 4)
+                        for instruction in output.data:
+                            qargs = tuple(output.find_bit(q).index for q in instruction.qubits)
+                            self.assertTrue(target.instruction_supported(
+                                operation_name=instruction.operation.name, qargs=qargs,
+                                parameters=instruction.operation.params))
+                        self.assertTrue(Operator.from_circuit(output).equiv(Operator(source)))
+                        self.assertEqual(sorted(output.layout.final_index_layout()), list(range(4)))
+                        seen.add((name, level, seed))
+        self.assertEqual(len(seen), 20)
 
     def test_duration_units_are_explicit(self):
         from qiskit_ibm_runtime.fake_provider import FakeSherbrooke

@@ -470,13 +470,14 @@
 
     ctx.clearRect(0, 0, w, h);
 
-    var padL = 74;
+    ctx.font = '13px sans-serif';
+    var padL = Math.ceil(ctx.measureText('кубит 1 (q2)').width) + 18;
     var padR = 12;
-    var padT = 26;
-    var padB = 56;
-    var boxW = Math.max(130, Math.min(220, Math.round(w * 0.26)));
+    var padT = w < 360 ? 46 : 26;
+    var padB = w < 430 ? 82 : 56;
+    var boxW = w < 360 ? 110 : Math.max(130, Math.min(220, Math.round(w * 0.26)));
     var x0 = padL;
-    var x1 = Math.max(x0 + 70, w - padR - boxW - 26);
+    var x1 = Math.max(x0 + 32, w - padR - boxW - 26);
     var avail = Math.max(70, h - padT - padB);
     var gap = avail / 3;
     var ys = [padT + gap * 0.5, padT + gap * 1.5, padT + gap * 2.5];
@@ -491,7 +492,12 @@
     ctx.font = 'bold 13px sans-serif';
     ctx.textAlign = 'left';
     ctx.textBaseline = 'middle';
-    ctx.fillText('3-кубитный код: |psi> = alpha|000> + beta|111>', 8, padT * 0.45);
+    if (w < 360) {
+      ctx.fillText('3-кубитный код:', 8, 12);
+      ctx.fillText('|psi> = alpha|000> + beta|111>', 8, 30);
+    } else {
+      ctx.fillText('3-кубитный код: |psi> = alpha|000> + beta|111>', 8, padT * 0.45);
+    }
     ctx.restore();
 
     /* дорожки кубитов. Сверху вниз — q2, q1, q0, чтобы картинка читалась
@@ -559,7 +565,9 @@
       ctx.font = '12px sans-serif';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillText('измерение синдромов -> декодирование -> коррекция', w / 2, y);
+      for (var s = 0; s < steps.length; s++) {
+        ctx.fillText((s + 1) + '. ' + steps[s], w / 2, y - 40 + s * 20);
+      }
       ctx.restore();
       return;
     }

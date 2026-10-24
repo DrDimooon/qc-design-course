@@ -138,6 +138,12 @@ function check(name, cond, detail) {
 
 const h = runWidget();
 const CP = h.win.CircuitPlayground;
+check('текст сохраняет порядок H, CNOT, H', CP.chainText([
+  CP.makeGateOp('H', 0), CP.makeCnotOp(), CP.makeGateOp('H', 0)
+]) === 'H(q0); CNOT(q0->q1); H(q0)');
+check('текст сохраняет чередование кубитов', CP.chainText([
+  CP.makeGateOp('X', 1), CP.makeGateOp('H', 0), CP.makeGateOp('Z', 1)
+]) === 'X(q1); H(q0); Z(q1)');
 
 console.log('qc-playground: геометрия дорожек');
 check('виджет выставляет window.CircuitPlayground', !!CP);

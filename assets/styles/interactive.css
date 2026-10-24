@@ -78,10 +78,23 @@
   font-size: 0.82rem;
   line-height: 1.55;
   white-space: pre-wrap;
+  overflow-wrap: anywhere;
   background: rgba(127, 127, 127, 0.08);
   border-radius: 6px;
   padding: 8px 10px;
   margin-top: 8px;
+}
+
+/* Persistent announcement text remains available without duplicating the UI. */
+.qc-status {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }
 
 .qc-read {
@@ -159,13 +172,15 @@
 }
 
 /* --- Схемы mermaid: не сжимаем под ширину колонки, даём прокрутку --- */
-.md-typeset .mermaid {
+.md-typeset .mermaid,
+.md-typeset .qc-mermaid {
   overflow-x: auto;
   overflow-y: hidden;
   padding-bottom: 6px;
 }
 
-.md-typeset .mermaid svg {
+.md-typeset .mermaid svg,
+.md-typeset .qc-mermaid svg {
   max-width: none !important;
   height: auto !important;
 }

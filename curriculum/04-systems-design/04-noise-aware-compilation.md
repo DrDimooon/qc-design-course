@@ -5,9 +5,15 @@ difficulty: "advanced"
 duration: "~2 ч"
 status: "draft"
 tags: [noise-aware, target, backend-properties, zne, pec, dynamical-decoupling, fidelity]
+stability: api-sensitive
+tested_with:
+  qiskit: "2.6.0"
+last_verified: "2026-10-24"
 ---
 
 # Noise-aware компиляция: Target, heatmap-подход, error mitigation
+
+**Версионная проверка:** размещение VF2-пассов сверено с локальным Qiskit 2.6.0 / Runtime 0.50.0, `FakeSherbrooke` (2026-10-24). Наличие error-данных и параметры пресета важны не меньше номера уровня.
 
 В уроке 03 мы научились измерять качество компиляции в абстрактных единицах: SWAP, depth, число 2q-гейтов. На реальном устройстве эти единицы весят по-разному: ошибка CX на одной паре кубитов может быть втрое больше, чем на соседней, а readout-ошибка — внезапно хуже в углу чипа. Noise-aware компиляция дискретизирует устройство: layout и routing выбираются по данным о шумах, а не только по топологии. В этом уроке — из чего складывается шум, как читать его в Qiskit, как строить heatmap и компилировать по ней, и где граница между компиляцией и error mitigation.
 
@@ -94,7 +100,7 @@ flowchart LR
 
 Три способа «прокачать» шум в компиляцию:
 
-1. **Target внутри preset pass managers** (Qiskit 2.x): уже с уровня 1 layout/routing опираются на ошибки из Target — `VF2Layout`/`VF2PostLayout` оценивают раскладки по error-рейтам Target; чем выше уровень, тем больше попыток и глубже поиск. То есть `transpile(qc, backend=backend, optimization_level=3)` — компактный noise-aware рецепт, а `VF2PostLayout` пересаживает раскладку на менее шумные кубиты (на уровнях 1-2 он стоит в конце routing-сцены, на level 3 — в конце optimization-сцены). **Важная оговорка:** сам `SabreLayout` (и `SabreSwap`) error-рейты **не учитывают** — они чисто топологические: если подсунуть два Target с одинаковой картой связности, но разными ошибками рёбер, раскладка `SabreLayout` получается одинаковой (проверяется на Qiskit 2.6). Дополнительный пасс `SabrePreLayout` тоже калибровки не загружает: его параметр `error_rate` задаёт искусственный штраф для **добавленных** рёбер расширенного графа (исходные рёбра в этой процедуре считаются безошибочными) — это эвристика расстояния, а не учёт аппаратного шума. Калибровочный noise-aware выбор стартовых кубитов и готовой раскладки делают VF2-пассы (`VF2Layout`/`VF2PostLayout`) по error-рейтам Target и их score.
+1. **Target внутри preset pass managers:** VF2-пассы могут оценивать раскладки по error-данным `Target`, но это не безусловная гарантия noise-aware результата. В проверенном Qiskit 2.6.0 / FakeSherbrooke при `layout_method=None`, `initial_layout=None` условный `VF2PostLayout` сконфигурирован в routing уровней **1–3**; на level 3 есть **дополнительный** в конце optimization. Явное `layout_method="default"` в той же версии отключает бюджеты этих включений: имя плагина само по себе не описывает всю конфигурацию. Дерево показывает наличие условных задач, а фактическое выполнение проверяется callback на выбранной схеме; [рекурсивная инспекция](02-transpiler-internals.md#stagedpassmanager-шесть-этапов) разобрана в каноническом уроке. **Важная оговорка:** сами `SabreLayout` и `SabreSwap` error-рейты **не используют** в своей топологической эвристике. При одинаковой топологии, параметрах, числе trials и seed изменение только ошибок не задаёт им шумовую целевую функцию. Дополнительный `SabrePreLayout` также не загружает калибровки: его `error_rate` — искусственный штраф для добавленных рёбер, а не аппаратная ошибка. Калибровочный выбор и его результат проверяйте отдельно по VF2-пассам и метрикам.
 2. **Custom layout/routing pass с шумовой целевой функцией**: собственный PassManager с пассом, который по heatmap выбирает область чипа (как в уроке 02).
 3. **Тепловые веса в routing**: SabreSwap в базовой версии не учитывает error rate рёбер — вставляет SWAP везде одинаково. Продвинутые варианты (например, `SabreLayout` с `routing_pass`, который знает цены рёбер) учитывают шум; это открытая исследовательская задача и одна из целей урока 05.
 
@@ -110,15 +116,15 @@ qc.cx(2, 1)
 qc.cx(1, 3)
 qc.measure_all()
 
-# уровню 3 известно про ошибки — layout будет noise-adaptive
+# Target содержит ошибки; использование VF2 зависит от конфигурации и условий
 tq = transpile(qc, backend=backend, optimization_level=3, seed_transpiler=42)
 ```
 
-Это уже компиляция с учётом шума «из коробки».
+Это кандидат для сравнения с другими уровнями, а не обещание лучшей раскладки или наблюдаемой точности. Уровень 3 задаёт больший бюджет оптимизации; измеряйте результат вместе с временем компиляции.
 
 ## Оптимизация под fidelity, не под depth
 
-Depth и SWAP — удобные прокси, но настоящая метрика — ожидаемая fidelity исполнённой схемы. Она оценивается как произведение вкладов всех инструкций:
+Depth и SWAP — структурные прокси. Физическая длительность, калибровочный error proxy и наблюдаемый успех — разные показатели: см. [лестницу метрик](03-routing-mapping-sabre.md#metrics-ladder). `depth()` не измеряет время декогеренции. Ниже — ограниченная эвристическая модель, а не измеренная fidelity; в частности, код пропускает readout и idle, а для 1q-гейтов использует заглушку:
 
 ```python
 import math
@@ -170,8 +176,8 @@ print("score est.:", estimate_fidelity(tq, backend.target))
 ## Практические рекомендации
 
 1. Для выбора области чипа — используйте `target["cx"]` (или `target["ecr"]` / `target["cz"]` — смотрите `target.operation_names`): считайте среднюю ошибку рёбер, стройте heat-карту, а readout-ошибку берите из `target["measure"][(q,)].error` — и выбирайте кубиты с малой readout-ошибкой.
-2. `optimization_level=3` стоит по умолчанию для серьёзных задач; `seed_transpiler` фиксируйте для reproducibility.
-3. Сравнивайте стратегии по estimated fidelity, а не только по depth — но помните, что оценка считается по транслированной схеме, а не по исходной.
+2. Сравните несколько уровней, включая 3, на одном корпусе и seed'ах: больший бюджет не гарантирует лучшего результата или монотонного времени компиляции. Фиксируйте `seed_transpiler`, версию, параметры и число trials для reproducibility.
+3. Сравнивайте стратегии по набору метрик из [лестницы](03-routing-mapping-sabre.md#metrics-ladder), а не только по depth. Error proxy считается по нативной схеме и не заменяет проверку наблюдаемой точности.
 4. Учитывайте crosstalk: значение «лучшей» пары кубитов по errors может искажаться, если параллелить её исполнение с соседними слоями; это поле исследования в layout/scheduling-aware компиляции (см. урок 05).
 
 ## 📚 Узнать подробнее
@@ -189,7 +195,7 @@ print("score est.:", estimate_fidelity(tq, backend.target))
 <details markdown="1">
 <summary>Статьи и блоги</summary>
 
-- **IBM Quantum documentation «Compare transpiler settings»** - секция «Noise-aware layout/routing в Qiskit»: как optimization_level 3 и VF2PostLayout делают компиляцию noise-aware «из коробки», плюс dynamical decoupling для задержек. [ссылка](https://quantum.cloud.ibm.com/docs/guides/circuit-transpilation-settings)
+- **IBM Quantum documentation «Compare transpiler settings»** - секция «Noise-aware layout/routing в Qiskit»: сравнение настроек пресета и использование данных Target; конкретное размещение VF2PostLayout сверяйте с локальной версией и параметрами, а DD — с построенным расписанием. [ссылка](https://quantum.cloud.ibm.com/docs/guides/circuit-transpilation-settings)
 - **IBM Quantum blog «Optimize quantum circuits with AI-powered transpiler passes» (David Kremer и др.)** - секция «Тепловые веса в routing»: AIRouting учитывает карту ошибок устройства при вставке SWAP — RL-вариант heat-driven routing, в среднем −42% 2q-гейтов. [ссылка](https://www.ibm.com/quantum/blog/ai-transpiler-passes)
 - **IBM Quantum blog «Qiskit leads quantum SDKs in performance, testing shows»** - секция «Heatmap-approach: выбор кубитов по шумам»: почему скорость перебора раскладок важна при оценке по error-рейтам Target. [ссылка](https://www.ibm.com/quantum/blog/qiskit-performance)
 </details>

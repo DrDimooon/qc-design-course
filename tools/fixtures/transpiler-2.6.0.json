@@ -1,0 +1,229 @@
+{
+  "schema": 1,
+  "fixture_id": "generic-line5-fixed-v1",
+  "provenance": {
+    "qiskit": "2.6.0",
+    "threads": {
+      "QISKIT_NUM_PROCS": "1",
+      "RAYON_NUM_THREADS": "1",
+      "OMP_NUM_THREADS": "1",
+      "OPENBLAS_NUM_THREADS": "1"
+    }
+  },
+  "target": {
+    "num_qubits": 5,
+    "dt": 2e-09,
+    "qubit_properties": null,
+    "timing_constraints": {
+      "granularity": 1,
+      "min_length": 1,
+      "pulse_alignment": 1,
+      "acquire_alignment": 1
+    },
+    "instructions": [
+      {
+        "name": "cx",
+        "num_qubits": 2,
+        "params": [],
+        "placements": [
+          [[0, 1], {"duration": 4e-07, "error": 0.01}],
+          [[1, 0], {"duration": 4e-07, "error": 0.01}],
+          [[1, 2], {"duration": 4e-07, "error": 0.01}],
+          [[2, 1], {"duration": 4e-07, "error": 0.01}],
+          [[2, 3], {"duration": 4e-07, "error": 0.01}],
+          [[3, 2], {"duration": 4e-07, "error": 0.01}],
+          [[3, 4], {"duration": 4e-07, "error": 0.01}],
+          [[4, 3], {"duration": 4e-07, "error": 0.01}]
+        ]
+      },
+      {
+        "name": "delay",
+        "num_qubits": 1,
+        "params": [
+          {"parameter": "t"}
+        ],
+        "placements": [
+          [[0], null],
+          [[1], null],
+          [[2], null],
+          [[3], null],
+          [[4], null]
+        ]
+      },
+      {
+        "name": "id",
+        "num_qubits": 1,
+        "params": [],
+        "placements": [
+          [[0], {"duration": 4e-08, "error": 0.0001}],
+          [[1], {"duration": 4e-08, "error": 0.0001}],
+          [[2], {"duration": 4e-08, "error": 0.0001}],
+          [[3], {"duration": 4e-08, "error": 0.0001}],
+          [[4], {"duration": 4e-08, "error": 0.0001}]
+        ]
+      },
+      {
+        "name": "measure",
+        "num_qubits": 1,
+        "params": [],
+        "placements": [
+          [[0], {"duration": 1e-06, "error": 0.02}],
+          [[1], {"duration": 1e-06, "error": 0.02}],
+          [[2], {"duration": 1e-06, "error": 0.02}],
+          [[3], {"duration": 1e-06, "error": 0.02}],
+          [[4], {"duration": 1e-06, "error": 0.02}]
+        ]
+      },
+      {
+        "name": "reset",
+        "num_qubits": 1,
+        "params": [],
+        "placements": [
+          [[0], {"duration": 1e-06, "error": 0.0}],
+          [[1], {"duration": 1e-06, "error": 0.0}],
+          [[2], {"duration": 1e-06, "error": 0.0}],
+          [[3], {"duration": 1e-06, "error": 0.0}],
+          [[4], {"duration": 1e-06, "error": 0.0}]
+        ]
+      },
+      {
+        "name": "rz",
+        "num_qubits": 1,
+        "params": [
+          {"parameter": "\u03bb"}
+        ],
+        "placements": [
+          [[0], {"duration": 0.0, "error": 0.0}],
+          [[1], {"duration": 0.0, "error": 0.0}],
+          [[2], {"duration": 0.0, "error": 0.0}],
+          [[3], {"duration": 0.0, "error": 0.0}],
+          [[4], {"duration": 0.0, "error": 0.0}]
+        ]
+      },
+      {
+        "name": "sx",
+        "num_qubits": 1,
+        "params": [],
+        "placements": [
+          [[0], {"duration": 4e-08, "error": 0.0001}],
+          [[1], {"duration": 4e-08, "error": 0.0001}],
+          [[2], {"duration": 4e-08, "error": 0.0001}],
+          [[3], {"duration": 4e-08, "error": 0.0001}],
+          [[4], {"duration": 4e-08, "error": 0.0001}]
+        ]
+      },
+      {
+        "name": "x",
+        "num_qubits": 1,
+        "params": [],
+        "placements": [
+          [[0], {"duration": 8e-08, "error": 0.0002}],
+          [[1], {"duration": 8e-08, "error": 0.0002}],
+          [[2], {"duration": 8e-08, "error": 0.0002}],
+          [[3], {"duration": 8e-08, "error": 0.0002}],
+          [[4], {"duration": 8e-08, "error": 0.0002}]
+        ]
+      }
+    ]
+  },
+  "target_sha256": "d0af4b6b925b32eb6991d11972d96e014dd92c0145b61245b132db07a945fb2c",
+  "profiles": {
+    "automatic": {
+      "config": {
+        "init_method": null,
+        "layout_method": null,
+        "routing_method": null,
+        "translation_method": null,
+        "optimization_method": null,
+        "scheduling_method": null,
+        "seed_transpiler": 7,
+        "unitary_synthesis_method": "default",
+        "approximation_degree": 1.0,
+        "qubits_initially_zero": true
+      },
+      "levels": [
+        [
+          {"name": "init", "pre": {"linear": ["ContainsInstruction", {"if": ["Error"]}]}, "tasks": {"linear": ["UnitarySynthesis", "HighLevelSynthesis", "BasisTranslator"]}, "post": null},
+          {"name": "layout", "pre": null, "tasks": {"linear": ["SetLayout", {"if": ["TrivialLayout"]}, "FullAncillaAllocation", "EnlargeWithAncilla", "ApplyLayout"]}, "post": null},
+          {"name": "routing", "pre": null, "tasks": {"linear": ["CheckMap", {"if": ["BarrierBeforeFinalMeasurements", "SabreSwap"]}, "FilterOpNodes"]}, "post": null},
+          {"name": "translation", "pre": null, "tasks": {"linear": ["UnitarySynthesis", "HighLevelSynthesis", "BasisTranslator"]}, "post": null},
+          {"name": "optimization", "pre": null, "tasks": null, "post": null},
+          {"name": "scheduling", "pre": null, "tasks": {"linear": ["ContainsInstruction", {"if": ["TimeUnitConversion"]}]}, "post": null}
+        ],
+        [
+          {"name": "init", "pre": {"linear": ["ContainsInstruction", {"if": ["Error"]}]}, "tasks": {"linear": ["UnitarySynthesis", "HighLevelSynthesis", "BasisTranslator", "InverseCancellation", "ContractIdleWiresInControlFlow"]}, "post": null},
+          {"name": "layout", "pre": null, "tasks": {"linear": ["SetLayout", {"if": ["TrivialLayout", "CheckMap"]}, {"if": ["VF2Layout"]}, {"if": ["BarrierBeforeFinalMeasurements", "SabreLayout"]}, {"if": [{"linear": ["FullAncillaAllocation", "EnlargeWithAncilla", "ApplyLayout"]}]}]}, "post": null},
+          {"name": "routing", "pre": null, "tasks": {"linear": ["CheckMap", {"if": ["BarrierBeforeFinalMeasurements", "SabreSwap"]}, {"if": ["VF2PostLayout"]}, {"if": ["ApplyLayout"]}, "FilterOpNodes"]}, "post": null},
+          {"name": "translation", "pre": null, "tasks": {"linear": ["UnitarySynthesis", "HighLevelSynthesis", "BasisTranslator"]}, "post": null},
+          {"name": "optimization", "pre": null, "tasks": {"linear": ["Size", "Depth", "FixedPoint", "FixedPoint", {"do_while": ["Optimize1qGatesDecomposition", "InverseCancellation", "ContractIdleWiresInControlFlow", "GatesInBasis", {"if": [{"linear": ["UnitarySynthesis", "HighLevelSynthesis", "BasisTranslator"]}]}, "Size", "Depth", "FixedPoint", "FixedPoint"]}]}, "post": null},
+          {"name": "scheduling", "pre": null, "tasks": {"linear": ["ContainsInstruction", {"if": ["TimeUnitConversion"]}]}, "post": null}
+        ],
+        [
+          {"name": "init", "pre": {"linear": ["ContainsInstruction", {"if": ["Error"]}]}, "tasks": {"linear": ["UnitarySynthesis", "HighLevelSynthesis", "BasisTranslator", "ElidePermutations", "RemoveDiagonalGatesBeforeMeasure", "RemoveIdentityEquivalent", "InverseCancellation", "ContractIdleWiresInControlFlow", "CommutativeCancellation", "ConsolidateBlocks", "Split2QUnitaries"]}, "post": null},
+          {"name": "layout", "pre": null, "tasks": {"linear": ["SetLayout", {"if": ["VF2Layout"]}, {"if": ["BarrierBeforeFinalMeasurements", "SabreLayout"]}, {"if": [{"linear": ["FullAncillaAllocation", "EnlargeWithAncilla", "ApplyLayout"]}]}]}, "post": null},
+          {"name": "routing", "pre": null, "tasks": {"linear": ["CheckMap", {"if": ["BarrierBeforeFinalMeasurements", "SabreSwap"]}, {"if": ["VF2PostLayout"]}, {"if": ["ApplyLayout"]}, "FilterOpNodes"]}, "post": null},
+          {"name": "translation", "pre": null, "tasks": {"linear": ["UnitarySynthesis", "HighLevelSynthesis", "BasisTranslator"]}, "post": null},
+          {"name": "optimization", "pre": null, "tasks": {"linear": ["TwoQubitPeepholeOptimization", "Size", "Depth", "FixedPoint", "FixedPoint", {"do_while": ["RemoveIdentityEquivalent", "Optimize1qGatesDecomposition", "CommutativeCancellation", "ContractIdleWiresInControlFlow", "GatesInBasis", {"if": [{"linear": ["UnitarySynthesis", "HighLevelSynthesis", "BasisTranslator"]}]}, "Size", "Depth", "FixedPoint", "FixedPoint"]}]}, "post": null},
+          {"name": "scheduling", "pre": null, "tasks": {"linear": ["ContainsInstruction", {"if": ["TimeUnitConversion"]}]}, "post": null}
+        ],
+        [
+          {"name": "init", "pre": {"linear": ["ContainsInstruction", {"if": ["Error"]}]}, "tasks": {"linear": ["UnitarySynthesis", "HighLevelSynthesis", "BasisTranslator", "ElidePermutations", "RemoveDiagonalGatesBeforeMeasure", "RemoveIdentityEquivalent", "InverseCancellation", "ContractIdleWiresInControlFlow", "CommutativeCancellation", "ConsolidateBlocks", "Split2QUnitaries"]}, "post": null},
+          {"name": "layout", "pre": null, "tasks": {"linear": ["SetLayout", {"if": ["VF2Layout"]}, {"if": ["BarrierBeforeFinalMeasurements", "SabreLayout"]}, {"if": [{"linear": ["FullAncillaAllocation", "EnlargeWithAncilla", "ApplyLayout"]}]}]}, "post": null},
+          {"name": "routing", "pre": null, "tasks": {"linear": ["CheckMap", {"if": ["BarrierBeforeFinalMeasurements", "SabreSwap"]}, {"if": ["VF2PostLayout"]}, {"if": ["ApplyLayout"]}, "FilterOpNodes"]}, "post": null},
+          {"name": "translation", "pre": null, "tasks": {"linear": ["UnitarySynthesis", "HighLevelSynthesis", "BasisTranslator"]}, "post": null},
+          {"name": "optimization", "pre": null, "tasks": {"linear": ["Size", "Depth", "MinimumPoint", {"do_while": ["TwoQubitPeepholeOptimization", "RemoveIdentityEquivalent", "Optimize1qGatesDecomposition", "CommutativeCancellation", "ContractIdleWiresInControlFlow", "GatesInBasis", {"if": [{"linear": ["UnitarySynthesis", "HighLevelSynthesis", "BasisTranslator"]}]}, "Size", "Depth", "MinimumPoint"]}, "VF2PostLayout", {"if": ["ApplyLayout"]}]}, "post": null},
+          {"name": "scheduling", "pre": null, "tasks": {"linear": ["ContainsInstruction", {"if": ["TimeUnitConversion"]}]}, "post": null}
+        ]
+      ]
+    },
+    "explicit-default": {
+      "config": {
+        "init_method": "default",
+        "layout_method": "default",
+        "routing_method": "default",
+        "translation_method": "default",
+        "optimization_method": "default",
+        "scheduling_method": "default",
+        "seed_transpiler": 7,
+        "unitary_synthesis_method": "default",
+        "approximation_degree": 1.0,
+        "qubits_initially_zero": true
+      },
+      "levels": [
+        [
+          {"name": "init", "pre": {"linear": ["ContainsInstruction", {"if": ["Error"]}]}, "tasks": {"linear": ["UnitarySynthesis", "HighLevelSynthesis", "BasisTranslator"]}, "post": null},
+          {"name": "layout", "pre": null, "tasks": {"linear": ["SetLayout", {"if": ["TrivialLayout"]}, "FullAncillaAllocation", "EnlargeWithAncilla", "ApplyLayout"]}, "post": null},
+          {"name": "routing", "pre": null, "tasks": {"linear": ["CheckMap", {"if": ["BarrierBeforeFinalMeasurements", "SabreSwap"]}, "FilterOpNodes"]}, "post": null},
+          {"name": "translation", "pre": null, "tasks": {"linear": ["UnitarySynthesis", "HighLevelSynthesis", "BasisTranslator"]}, "post": null},
+          {"name": "optimization", "pre": null, "tasks": null, "post": null},
+          {"name": "scheduling", "pre": null, "tasks": {"linear": ["ContainsInstruction", {"if": ["TimeUnitConversion"]}]}, "post": null}
+        ],
+        [
+          {"name": "init", "pre": {"linear": ["ContainsInstruction", {"if": ["Error"]}]}, "tasks": {"linear": ["UnitarySynthesis", "HighLevelSynthesis", "BasisTranslator", "InverseCancellation", "ContractIdleWiresInControlFlow"]}, "post": null},
+          {"name": "layout", "pre": null, "tasks": {"linear": ["SetLayout", {"if": ["TrivialLayout", "CheckMap"]}, {"if": ["VF2Layout"]}, {"if": ["BarrierBeforeFinalMeasurements", "SabreLayout"]}, {"if": [{"linear": ["FullAncillaAllocation", "EnlargeWithAncilla", "ApplyLayout"]}]}]}, "post": null},
+          {"name": "routing", "pre": null, "tasks": {"linear": ["CheckMap", {"if": ["BarrierBeforeFinalMeasurements", "SabreSwap"]}, "FilterOpNodes"]}, "post": null},
+          {"name": "translation", "pre": null, "tasks": {"linear": ["UnitarySynthesis", "HighLevelSynthesis", "BasisTranslator"]}, "post": null},
+          {"name": "optimization", "pre": null, "tasks": {"linear": ["Size", "Depth", "FixedPoint", "FixedPoint", {"do_while": ["Optimize1qGatesDecomposition", "InverseCancellation", "ContractIdleWiresInControlFlow", "GatesInBasis", {"if": [{"linear": ["UnitarySynthesis", "HighLevelSynthesis", "BasisTranslator"]}]}, "Size", "Depth", "FixedPoint", "FixedPoint"]}]}, "post": null},
+          {"name": "scheduling", "pre": null, "tasks": {"linear": ["ContainsInstruction", {"if": ["TimeUnitConversion"]}]}, "post": null}
+        ],
+        [
+          {"name": "init", "pre": {"linear": ["ContainsInstruction", {"if": ["Error"]}]}, "tasks": {"linear": ["UnitarySynthesis", "HighLevelSynthesis", "BasisTranslator", "ElidePermutations", "RemoveDiagonalGatesBeforeMeasure", "RemoveIdentityEquivalent", "InverseCancellation", "ContractIdleWiresInControlFlow", "CommutativeCancellation", "ConsolidateBlocks", "Split2QUnitaries"]}, "post": null},
+          {"name": "layout", "pre": null, "tasks": {"linear": ["SetLayout", {"if": ["VF2Layout"]}, {"if": ["BarrierBeforeFinalMeasurements", "SabreLayout"]}, {"if": [{"linear": ["FullAncillaAllocation", "EnlargeWithAncilla", "ApplyLayout"]}]}]}, "post": null},
+          {"name": "routing", "pre": null, "tasks": {"linear": ["CheckMap", {"if": ["BarrierBeforeFinalMeasurements", "SabreSwap"]}, "FilterOpNodes"]}, "post": null},
+          {"name": "translation", "pre": null, "tasks": {"linear": ["UnitarySynthesis", "HighLevelSynthesis", "BasisTranslator"]}, "post": null},
+          {"name": "optimization", "pre": null, "tasks": {"linear": ["TwoQubitPeepholeOptimization", "Size", "Depth", "FixedPoint", "FixedPoint", {"do_while": ["RemoveIdentityEquivalent", "Optimize1qGatesDecomposition", "CommutativeCancellation", "ContractIdleWiresInControlFlow", "GatesInBasis", {"if": [{"linear": ["UnitarySynthesis", "HighLevelSynthesis", "BasisTranslator"]}]}, "Size", "Depth", "FixedPoint", "FixedPoint"]}]}, "post": null},
+          {"name": "scheduling", "pre": null, "tasks": {"linear": ["ContainsInstruction", {"if": ["TimeUnitConversion"]}]}, "post": null}
+        ],
+        [
+          {"name": "init", "pre": {"linear": ["ContainsInstruction", {"if": ["Error"]}]}, "tasks": {"linear": ["UnitarySynthesis", "HighLevelSynthesis", "BasisTranslator", "ElidePermutations", "RemoveDiagonalGatesBeforeMeasure", "RemoveIdentityEquivalent", "InverseCancellation", "ContractIdleWiresInControlFlow", "CommutativeCancellation", "ConsolidateBlocks", "Split2QUnitaries"]}, "post": null},
+          {"name": "layout", "pre": null, "tasks": {"linear": ["SetLayout", {"if": ["VF2Layout"]}, {"if": ["BarrierBeforeFinalMeasurements", "SabreLayout"]}, {"if": [{"linear": ["FullAncillaAllocation", "EnlargeWithAncilla", "ApplyLayout"]}]}]}, "post": null},
+          {"name": "routing", "pre": null, "tasks": {"linear": ["CheckMap", {"if": ["BarrierBeforeFinalMeasurements", "SabreSwap"]}, "FilterOpNodes"]}, "post": null},
+          {"name": "translation", "pre": null, "tasks": {"linear": ["UnitarySynthesis", "HighLevelSynthesis", "BasisTranslator"]}, "post": null},
+          {"name": "optimization", "pre": null, "tasks": {"linear": ["Size", "Depth", "MinimumPoint", {"do_while": ["TwoQubitPeepholeOptimization", "RemoveIdentityEquivalent", "Optimize1qGatesDecomposition", "CommutativeCancellation", "ContractIdleWiresInControlFlow", "GatesInBasis", {"if": [{"linear": ["UnitarySynthesis", "HighLevelSynthesis", "BasisTranslator"]}]}, "Size", "Depth", "MinimumPoint"]}]}, "post": null},
+          {"name": "scheduling", "pre": null, "tasks": {"linear": ["ContainsInstruction", {"if": ["TimeUnitConversion"]}]}, "post": null}
+        ]
+      ]
+    }
+  },
+  "structure_sha256": "1552ff4a47cde6767f980aaac2f577307782ce8069f7218d480e6c59ef5000ba"
+}

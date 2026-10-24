@@ -5,22 +5,28 @@ difficulty: "advanced"
 duration: "~2 ч"
 status: "draft"
 tags: [transpiler, passmanager, dag, optimization-level, scheduling, basis-translator]
+stability: api-sensitive
+tested_with:
+  qiskit: "2.6.0"
+last_verified: "2026-10-24"
 ---
 
 # Как устроен transpiler: DAG, PassManager, группы пассов
+
+**Версионная проверка:** устройство стандартного NISQ-пресета ниже сверено с локальным Qiskit 2.6.0 (2026-10-24), для `FakeSherbrooke` из Runtime 0.50.0. Версия, `Target` и параметры выбора стадий — часть наблюдаемой конфигурации, а не универсальный список пассов.
 
 Вызов `transpile(qc, backend=...)` прячет внутри себя конвейер из десятков трансформаций схемы. В обычной работе это удобно; когда вы оптимизируете качество компиляции — нужно уметь заглянуть внутрь и конфигурировать конвейер. В этом уроке разберём строение компилятора Qiskit: DAG-представление схемы, PassManager, деление пассов на этапы и то, что делает каждый optimization_level. В финале напишем собственный пасс.
 
 ## 30000 футов: что скрывает transpile()
 
-Схема на входе — «алгоритмический» объект: кубиты безымянные, CX между любыми парами, гейты вроде `h` или `rz` в удобном для человека виде. На выходе нужно устройство-специфичное описание: физические кубиты конкретного чипа, только basis gates, с учётом запретов направлений и с раскладкой по времени. Удобно выделить четыре подзадачи:
+Схема на входе — «алгоритмический» объект: логические кубиты, CX между любыми парами, гейты вроде `h` или `rz` в удобном для человека виде. На выходе нужно устройство-специфичное описание: физические кубиты конкретного чипа, только basis gates, с учётом запретов направлений; при запросе scheduling — ещё и расписание по времени. Удобно выделить четыре подзадачи:
 
 1. **Layout** — какой логический кубит где живёт (bijection logical → physical).
 2. **Routing** — как доставить состояния друг к другу (вставка SWAP).
 3. **Translation** — как переписать гейты в доступный basis (rz, sx, x, ecr...).
 4. **Scheduling** — до какого момента наносекунд исполнять каждую инструкцию.
 
-**Четыре подзадачи ≠ шесть стадий конвейера.** В Qiskit preset-конвейер (`optimization_level` 0–3) состоит из шести именованных сцен: `init → layout → routing → translation → optimization → scheduling`. Подзадачи выше — это содержание части сцен: `layout`, `routing`, `translation` и `scheduling`; сцена `init` готовит схему до размещения, а `optimization` — постоянная сцена (свой набор пассов на каждом уровне), которая после mapping вычищает лишнее. Так что «четыре» и «шесть» не спорят, а отвечают на разные вопросы: «какие решения принимаются» и «какие сцены исполняются».
+**Четыре подзадачи ≠ шесть стадий конвейера.** Стандартный NISQ-пресет (`optimization_level` 0–3) имеет шесть именованных сцен: `init → layout → routing → translation → optimization → scheduling`. `init` готовит схему, `optimization` преобразует её после mapping. Фиксированы имена и порядок, но менеджер отдельной сцены может быть `None` (например, optimization на уровне 0). Наличие имени `scheduling` не означает, что построено физическое расписание: без выбранного метода сцена может быть пустой или содержать только служебную обработку времени. «Четыре» и «шесть» отвечают на разные вопросы: «какие подзадачи выделены» и «какие точки расширения заданы».
 
 Qiskit реализует это как **конвейер пассов**: маленькие трансформации, каждая читает схему (dag) и переписывает её или собирает информацию. Конвейер запускается в составе **StagedPassManager** — «сцены», идущие строго по порядку.
 
@@ -74,15 +80,15 @@ flowchart LR
 | Этап | Задача | Типовые пассы (реализация `default`, Qiskit 2.6) |
 |------|--------|----------------|
 | **init** | подготовка: декомпозиция больших выстроек, логические оптимизации до mapping | `UnitarySynthesis`, `HighLevelSynthesis`, `BasisTranslator`, `InverseCancellation`; на уровнях 2–3 ещё `ElidePermutations`, `RemoveDiagonalGatesBeforeMeasure`, `ConsolidateBlocks`, `Split2QUnitaries` |
-| **layout** | отобразить логические кубиты на физические | `TrivialLayout` (только level 1, как попытка «идеальной» раскладки), `VF2Layout`, `SabreLayout`, `DenseLayout` (некоторые конфигурации) |
-| **routing** | вставить SWAP, чтобы все 2q-гейты попали на рёбра | `SabreSwap` (+ `BasicSwap`, `LookaheadSwap`, `StochasticSwap` — доступны как stage-плагины) |
+| **layout** | отобразить логические кубиты на физические | `TrivialLayout` (level 0; на level 1 — попытка без routing), `VF2Layout`, `SabreLayout`; `DenseLayout` выбирается отдельным методом |
+| **routing** | обеспечить связность 2q-гейтов | `SabreSwap`; при обычном выборе layout (`None`) на уровнях 1–3 также условный `VF2PostLayout`; альтернативные методы — `basic`, `lookahead`, `none` |
 | **translation** | переписать всё в basis gates и соблюдать направление | `BasisTranslator`, `UnitarySynthesis`, `HighLevelSynthesis` |
-| **optimization** | выкинуть лишнее, сжать последовательности | `Optimize1qGatesDecomposition`, `CommutativeCancellation`; на уровнях 2–3 `TwoQubitPeepholeOptimization`; на level 3 ещё `VF2PostLayout` в конце сцены |
-| **scheduling** | назначить времена, вставить delays | `ALAPScheduleAnalysis`/`ASAPScheduleAnalysis`, `PadDelay`, `TimeUnitConversion` |
+| **optimization** | выкинуть лишнее, сжать последовательности | `Optimize1qGatesDecomposition`, `CommutativeCancellation`; на уровнях 2–3 `TwoQubitPeepholeOptimization`; на level 3 при обычном выборе layout (`None`) ещё `VF2PostLayout` в конце сцены |
+| **scheduling** | при запросе назначить времена и вставить delays | при `alap`/`asap` — `ALAPScheduleAnalysis`/`ASAPScheduleAnalysis`, `PadDelay`; без метода возможны только служебная обработка времени/проверки или `None` |
 
 Две важные детали архитектуры:
 
-- **VF2Layout / VF2PostLayout**: `VF2PostLayout` — пост-layout пасс, который по таблице ошибок бэкенда проверяет, нельзя ли пересадить готовую схему на лучшие физические кубиты (отбор раскладок идёт по error-рейтам Target). **Где он стоит (Qiskit 2.6):** на уровне 3 — в конце optimization-сцены, после пересборки; на уровнях 1–2 пресет 2.6 его не запускает (исторически в 1.x он завершал routing-сцену уровней 1–2). Если у вас другая версия — проверьте дампом пассов (см. ниже), а не по памяти.
+- **VF2Layout / VF2PostLayout**: `VF2PostLayout` ищет более выгодное физическое размещение уже маршрутизированной схемы по ошибкам `Target`. **Наблюдение Qiskit 2.6.0 / FakeSherbrooke:** при `layout_method=None` и `initial_layout=None` он сконфигурирован условно в routing уровней **1–3**, а на уровне **3 дополнительно** — в конце optimization. Это не обещание выполнения на каждой схеме: контроллеры проверяют условия во время запуска. Даже явное `layout_method="default"` не равнозначно `None` для бюджетов VF2: в этой конфигурации оно отключает перечисленные включения `VF2PostLayout`. Проверяйте параметры вместе с версией, а не только имя плагина.
 - **SabreLayout** — не «чистый» layout, а комбинированный layout+routing: он внутри себя запускает routing и получает интегрально лучший результат (см. урок 03, arXiv:1809.02573). Важная оговорка: сам по себе `SabreLayout` **не учитывает error-рейты** — он чисто топологический (см. урок 04).
 
 Разгруппировано всё это так: `generate_preset_pass_manager(optimization_level=3, backend=backend)` возвращает `StagedPassManager`, у которого есть атрибуты-сцены (`.init`, `.layout`, `.routing`, `.translation`, `.optimization`, `.scheduling`). В Qiskit 2.x набор сцен — `('init', 'layout', 'routing', 'translation', 'optimization', 'scheduling')`; атрибут `.pre_layout` в API тоже есть, но в preset-менеджере он остаётся `None` (сцена pre-layout не заполняется). Посмотреть фактический конвейер:
@@ -92,18 +98,36 @@ from qiskit.transpiler import generate_preset_pass_manager
 from qiskit.providers.fake_provider import GenericBackendV2
 
 backend = GenericBackendV2(10, seed=42)
-pm = generate_preset_pass_manager(optimization_level=3, backend=backend)
+pm = generate_preset_pass_manager(optimization_level=3, backend=backend,
+                                  layout_method=None, seed_transpiler=7)
 
-for stage_name in pm.stages:
+def show_tasks(task, indent="  "):
+    print(indent + type(task).__name__)
+    for child in getattr(task, "tasks", ()):
+        show_tasks(child, indent + "  ")
+
+for stage_name in pm.expanded_stages:  # включает pre_/post_-точки расширения
     stage_pm = getattr(pm, stage_name, None)
-    if stage_pm is None:
-        continue
     print(f"[{stage_name}]")
-    for task in stage_pm.to_flow_controller().tasks:
-        print("   ", type(task).__name__)
+    if stage_pm is None:
+        print("  None")
+    else:
+        show_tasks(stage_pm.to_flow_controller())
 ```
 
-Каждая сцена — тоже `PassManager`; перечисленные через `to_flow_controller().tasks` задачи — это отдельные пассы или контроллеры, объединяющие пассы в циклы (например, повторять оптимизацию, пока глубина уменьшается).
+Каждая заполненная сцена — тоже `PassManager`. Рекурсивный обход публичных `to_flow_controller()` / `.tasks` показывает и вложенные условные/циклические контроллеры: один верхний `.tasks` скрывал бы часть пассов. Это **сконфигурированное дерево**, а не журнал исполнения. Чтобы узнать, какие пассы действительно выполнились на конкретной схеме, используйте callback `pm.run(qc, callback=...)`; записывайте имя `kwargs["pass_"]`, не делайте вывод о выполнении по одному присутствию в дереве.
+
+Для минимальной механической проверки сравните уровни 0–3 на одном `FakeSherbrooke` с `seed_transpiler=7`, отдельно для `layout_method=None` и `"default"`, без `initial_layout`. Проверяйте шесть имён стадий и размещение интересующих урок пассов рекурсивно, сохраняя родителей-контроллеров. В первом профиле ожидается условный `VF2PostLayout` в routing уровней 1–3 и дополнительный в optimization уровня 3; во втором эти включения отсутствуют. `TwoQubitPeepholeOptimization` есть в optimization уровней 2–3 в обоих профилях. Записывайте версии SDK/Runtime, backend/Target и все параметры; читаемое дерево полезнее непрозрачного hash. Это проверка конкретного пресета, не требование фиксированной глубины результата или обязательного исполнения условного пасса.
+
+Локальные исходники SDK, объясняющие это наблюдение: `qiskit.transpiler.preset_passmanagers.common.get_vf2_limits` выдаёт бюджеты при `layout_method is None` и `initial_layout is None`; `common.generate_routing_passmanager` добавляет условный пост-layout; `builtin_plugins.OptimizationPassManager` добавляет отдельный пост-layout уровня 3. Эти имена — опора проверки установленной версии, не стабильный публичный API для собственного компилятора.
+
+Готовая механическая сверка: [tools/snapshot_transpiler.py](../../tools/snapshot_transpiler.py) сравнивает читаемые деревья с [эталоном 2.6.0](../../tools/fixtures/transpiler-2.6.0.json):
+
+```bash
+python tools/snapshot_transpiler.py --check tools/fixtures/transpiler-2.6.0.json
+```
+
+У этого эталона свой небольшой фиксированный Target, не FakeSherbrooke: профиль `automatic` оставляет методы стадий `None`, `explicit-default` задаёт их как `"default"`. Сравнение относится к сконфигурированным деревьям, не к выполненным пассам, точным бюджетам или качеству результата; параметры Target и профилей записаны в JSON.
 
 ### Сжатый обзор: MultiStagePassManager и снижение IR
 
@@ -211,7 +235,7 @@ class MyLayoutPlugin(PassManagerStagePlugin):
 
 Практический смысл: 0 — базовый исполнимый вариант, 1 — небольшой бюджет оптимизации, 2 — больше поиска, 3 — самый большой бюджет. Что окупается именно на вашей нагрузке — предмет lab-04: измеряйте качество вместе с `compile_time`. **Ни минимальная глубина, ни превосходство уровня 3 не гарантируются.**
 
-**Конкретные пассы — версионная деталь [Qiskit 2.6].** Уровень 2 добавляет в optimization `TwoQubitPeepholeOptimization` (и `CommutativeCancellation`, которого нет на уровне 1), а `TrivialLayout` на уровне 2 уже не используется; уровень 3 добавляет `VF2PostLayout` в конец optimization, а `ConsolidateBlocks`/`Split2QUnitaries` выполняются в init-сцене уровней 2–3. `Collect2qBlocks` из старых учебников — это **Qiskit 1.x** (в preset 2.6 не входит), как и `OptimizeSwapBeforeMeasure` (в preset 2.x не входит ни в один уровень, пасс доступен вручную). `CXCancellation` в 2.x отдельным пассом тоже отсутствует. Не запоминайте этот список: распечатайте свой (код ниже) — если номера версий не совпадают, расхождение нормально.
+**Конкретные пассы — версионная деталь [Qiskit 2.6.0, конфигурация выше].** Уровень 2 добавляет в optimization `TwoQubitPeepholeOptimization` и `CommutativeCancellation`; `TrivialLayout` есть на уровнях 0–1, но не 2–3. `ConsolidateBlocks`/`Split2QUnitaries` выполняются в init уровней 2–3. При `layout_method=None` уровень 3 добавляет `VF2PostLayout` в конец optimization **к уже существующему условному включению в routing уровней 1–3**; явный `"default"` меняет бюджеты и убирает эти включения. `Collect2qBlocks` и `OptimizeSwapBeforeMeasure` в наблюдаемом пресете отсутствуют; наличие класса в SDK не доказывает его использование пресетом. Не запоминайте ростер как контракт уровня: распечатайте дерево своей конфигурации.
 
 Всё, что дальше в этом уроке про имена пассов, — реализация Qiskit 2.6; смысл сцен сохраняется, а имена проверяйте дампом.
 
@@ -337,6 +361,8 @@ class KillAdjacentCZ(TransformationPass):
 
 ## Стык с физикой: scheduling и длительности гейтов
 
+`depth()` измеряет структурные слои, не секунды. Длительность расписания (makespan) и время работы компилятора — отдельные величины; определения и границы измерения собраны в [лестнице метрик](03-routing-mapping-sabre.md#metrics-ladder).
+
 Компиляция в реальную систему — это не только «какие гейты», но и «в какое время». Каждая инструкция имеет длительность (время пульса), а кубиты между гейтами простаивают — и это время напрямую умножает вклад декогеренции по T1/T2. Этап scheduling решает раскладку по оси времени:
 
 - `ALAPScheduleAnalysis` / `ASAPScheduleAnalysis` — стратегии «as late / as soon as possible»;
@@ -438,7 +464,7 @@ assert all(bits[0] == "0" for bits in counts)
 1. Почему transpiler работает с DAGCircuit, а не с последовательным списком операций QuantumCircuit?
 2. Перечислите шесть этапов StagedPassManager по порядку и для каждого — один типовой пасс. Всегда ли «четыре подзадачи» (layout/routing/translation/scheduling) — это то же самое, что «шесть этапов»?
 3. Чем optimization_level 2 отличается от 1 с точки зрения layout и глубины поиска? Какие пассы приходят в optimization-этапе вместо `InverseCancellation` (ответ версионный — проверьте дампом)?
-4. Что делает VF2PostLayout и в какой сцене он стоит (проверьте дампом preset-менеджера; в 2.6 — только на уровне 3 в конце optimization)?
+4. Что делает VF2PostLayout? Найдите его рекурсивным обходом в routing уровней 1–3 и дополнительно в optimization уровня 3 для Qiskit 2.6.0 / FakeSherbrooke / `layout_method=None`. Что изменится при явном `layout_method="default"`? Почему наличие условного пасса в дереве не доказывает его выполнения?
 5. Напишите AnalysisPass, который считает число измерений (`measure`). Каким ключом в property_set вы назовёте результат?
 6. Почему этап scheduling критичен даже без учёта шума? В чём выгода от знания точной длительности каждой инструкции?
 

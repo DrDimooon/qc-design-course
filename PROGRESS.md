@@ -38,7 +38,7 @@ tags: [progress, tracking]
 - [ ] [03-transpilation-hardware](curriculum/02-programming/03-transpilation-hardware.md)
 - [ ] [04-noise-simulation](curriculum/02-programming/04-noise-simulation.md)
 - [ ] [Лаба: lab-02-first-circuit](curriculum/02-programming/lab-02-first-circuit.md)
-- [ ] [Лаба: lab-03-ibm-quantum-run](curriculum/02-programming/lab-03-ibm-quantum-run.md)
+- [ ] [Лаба: локальная репетиция Runtime](curriculum/02-programming/lab-03-ibm-quantum-run.md) — QPU-запуск дополнительный
 - [ ] [Тест: 02-quiz](tests/02-quiz.md)
 
 ## Модуль 03 — Алгоритмы
@@ -46,10 +46,10 @@ tags: [progress, tracking]
 - [ ] [README модуля](curriculum/03-algorithms/README.md)
 - [ ] [01-grover](curriculum/03-algorithms/01-grover.md)
 - [ ] [02-qft-shor](curriculum/03-algorithms/02-qft-shor.md)
-- [ ] [03-vqe-qaoa](curriculum/03-algorithms/03-vqe-qaoa.md)
-- [ ] [04-error-correction](curriculum/03-algorithms/04-error-correction.md)
-- [ ] [Problem set: analytic 03](curriculum/03-algorithms/problem-set-03.md)
-- [ ] [Тест: 03-quiz](tests/03-quiz.md)
+- [ ] [03-vqe-qaoa](curriculum/03-algorithms/03-vqe-qaoa.md) — elective; раздел QAOA нужен для capstone 01
+- [ ] [04-error-correction](curriculum/03-algorithms/04-error-correction.md) — elective
+- [ ] [Problem set: analytic 03](curriculum/03-algorithms/problem-set-03.md) — A1–A4 в Core, остальное elective
+- [ ] [Тест: 03-quiz](tests/03-quiz.md) — 1–7 и 16 в Core; остальные после соответствующих уроков
 
 ## Модуль 04 — Проектирование систем и оптимизация (core)
 
@@ -62,6 +62,7 @@ tags: [progress, tracking]
 - [ ] [Лаба: lab-04-platform-comparison](curriculum/04-systems-design/lab-04-platform-comparison.md)
 - [ ] [Лаба: lab-05-sabre-routing](curriculum/04-systems-design/lab-05-sabre-routing.md)
 - [ ] [Тест: 04-quiz](tests/04-quiz.md)
+- [ ] [Compiler Exit: локальная выпускная проверка](tests/compiler-exit-exam.md) — перед capstone 01/04
 
 ## Модуль 05 — Гардвэйр
 
@@ -79,12 +80,14 @@ tags: [progress, tracking]
 - [ ] [01-how-to-read-paper](curriculum/06-publications/01-how-to-read-paper.md)
 - [ ] [02-anthropic-efficient-circuits](curriculum/06-publications/02-anthropic-efficient-circuits.md)
 - [ ] [03-google-willow-qec](curriculum/06-publications/03-google-willow-qec.md)
+- [ ] [Самостоятельная проверка другой статьи](curriculum/06-publications/01-how-to-read-paper.md) — факультативный перенос навыка
 - [ ] [Ключи к урокам модуля 06](curriculum/06-publications/answers/README.md) — ответы вынесены из уроков в отдельные файлы (по схеме tests/answers)
 
 ## Итоговые тесты
 
-- [ ] [certification-quiz](tests/certification-quiz.md)
-- [ ] [final-exam](tests/final-exam.md)
+- [ ] [Промежуточная проверка Qiskit API](tests/certification-quiz.md)
+- [ ] [Compiler Exit — Core + Compiler](tests/compiler-exit-exam.md)
+- [ ] [Полный экзамен 00–06](tests/final-exam.md) — после соответствующих элективов
 
 ## Каты и флеш-карты
 

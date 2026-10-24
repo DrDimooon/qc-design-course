@@ -58,7 +58,7 @@
   <div class="qc-row">
     <div class="qc-col">
       <p class="qc-title">Амплитуды по элементам</p>
-      <canvas id="cv-amp" class="qc-canvas" style="height:280px"></canvas>
+      <canvas id="cv-amp" class="qc-canvas" style="height:280px" role="img" aria-label="Амплитуды по элементам" aria-describedby="state-text"></canvas>
       <p class="qc-note">
         Вещественная часть амплитуды растёт вверх от нулевой линии, мнимая — вниз.
         Отрицательная амплитуда рисуется ниже линии: так видно, что оракул сменил
@@ -67,7 +67,7 @@
     </div>
     <div class="qc-col">
       <p class="qc-title">Вероятность помеченного элемента по итерациям</p>
-      <canvas id="cv-graph" class="qc-canvas" style="height:280px"></canvas>
+      <canvas id="cv-graph" class="qc-canvas" style="height:280px" role="img" aria-label="Вероятность по итерациям" aria-describedby="state-text"></canvas>
       <p class="qc-note">
         По горизонтали — итерация, по вертикали — P(помеченного). Пунктир отмечает
         равномерный уровень 25%, красный круг — оптимум k = 1.
@@ -76,6 +76,7 @@
   </div>
 
   <div class="qc-state" id="state-text"></div>
+  <p id="widget-status" class="qc-status" role="status" aria-atomic="true"></p>
 
   <details class="qc-read">
     <summary>Как читать</summary>
@@ -134,6 +135,7 @@
 </div>
 
 <script src="../js/qc-core.js"></script>
+<script src="../js/widget-shared.js"></script>
 <script src="../js/widget-grover-amplitude.js"></script>
 
 </body>

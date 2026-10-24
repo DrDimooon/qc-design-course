@@ -20,6 +20,7 @@ tags: [answers, keys, tests, reference]
 | Тест модуля 04 (проектирование систем) | [answers/04.md](04.md) |
 | Тест модуля 05 (железо) | [answers/05.md](05.md) |
 | Сертификационный тест | [answers/certification.md](certification.md) |
+| Compiler Exit (Core + Compiler, 90 мин) | [answers/compiler-exit.md](compiler-exit.md) |
 | Итоговый экзамен | [answers/final.md](final.md) |
 | Кат 01 (Bell) | [answers/kata-01.md](kata-01.md) |
 | Кат 02 (Гровер на 2 кубитах) | [answers/kata-02.md](kata-02.md) |

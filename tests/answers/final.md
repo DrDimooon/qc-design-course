@@ -68,7 +68,7 @@ _Урок: [../../curriculum/04-systems-design/03-routing-mapping-sabre.md](../.
 _Урок: [../../curriculum/04-systems-design/02-transpiler-internals.md](../../curriculum/04-systems-design/02-transpiler-internals.md)._
 
 ## Вопрос 15 (модуль 04)
-**Ответ: A.** VF2Layout — точное вложение interaction-графа в coupling map (без свопов, до routing); VF2PostLayout — post-layout корректировка расстановки уже транслированной схемы по error-рейтам Target.
+**Ответ: A.** VF2Layout ищет вложение до routing; VF2PostLayout работает с уже маршрутизированной схемой по error-данным Target. В Qiskit 2.6.0 / FakeSherbrooke при `layout_method=None`, `initial_layout=None` условный пасс есть в routing уровней 1–3 (до translation), дополнительно — в optimization уровня 3. Явное `layout_method="default"` меняет бюджеты. Наличие в рекурсивном дереве не доказывает выполнения на конкретном входе; см. канонический урок и фиксированные профили snapshot-проверки.
 _Урок: [../../curriculum/04-systems-design/02-transpiler-internals.md](../../curriculum/04-systems-design/02-transpiler-internals.md)._
 
 ## Вопрос 16 (модуль 04)

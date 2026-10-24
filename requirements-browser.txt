@@ -1,0 +1,3 @@
+# Optional browser regression tooling; not required to run the widgets.
+# Tested with installed Chromium provided by Playwright on 2026-10-24.
+playwright==1.64.0

@@ -388,6 +388,12 @@
       render();
       return;
     }
+    if (global.QCWidget && global.QCWidget.reducedMotion()) {
+      state = QC.sv.apply1(state, QC.GATES.ry(TWO_PI), 0, N);
+      note = 'Полный оборот 2π выполнен одним действием (уменьшение движения).';
+      render();
+      return;
+    }
     anim.base = [state[0], state[1]];
     anim.t0 = (global.performance && global.performance.now) ? global.performance.now() : Date.now();
     anim.on = true;
@@ -404,6 +410,14 @@
 
   function init() {
     var half = Math.PI / 2;
+    if (global.QCWidget) {
+      global.QCWidget.onReducedMotion(function () {
+        stopAnim();
+        note = 'Вращение остановлено: включено уменьшение движения.';
+        render();
+      });
+    }
+    global.addEventListener('pagehide', stopAnim);
 
     QC.dom.button('btn-I', 'I', function () {
       applyGate(QC.GATES.I, GATE_INFO.I);

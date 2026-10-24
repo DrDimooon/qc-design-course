@@ -25,7 +25,8 @@ markdown_extensions:
   - pymdownx.superfences:
       custom_fences:
         - name: mermaid
-          class: mermaid
+          # Отдельный класс: только наш init, без конкурирующего рендера темы.
+          class: qc-mermaid
           format: !!python/name:pymdownx.superfences.fence_code_format
   - pymdownx.highlight
   - pymdownx.inlinehilite
@@ -52,6 +53,7 @@ extra_javascript:
   # (внешний CDN мог не открыться — тогда формулы и схемы не рисовались вовсе).
   - assets/vendor/mermaid/mermaid.min.js
   - assets/js/mermaid-init.js
+  - assets/js/widget-embed.js
   # MathJax в режиме SVG: пути символов встроены в SVG, веб-шрифты не нужны.
   # В режиме CHTLМ MathJax тянет шрифты с CDN — при недоступном CDN
   # «растянутые» символы (корень, черта над дробью) ломались.
@@ -122,7 +124,8 @@ nav:
       - Квиз 04: tests/04-quiz.md
       - Квиз 05: tests/05-quiz.md
       - Qiskit API readiness (промежуточная проверка): tests/certification-quiz.md
-      - Final exam: tests/final-exam.md
+      - Compiler Exit (Core + Compiler): tests/compiler-exit-exam.md
+      - Полный экзамен (00–06): tests/final-exam.md
       - Флеш-карты: tests/flashcards.md
       - Расписание повторений: tests/flashcards-schedule.md
   - Каты:
@@ -138,6 +141,7 @@ nav:
       - 02. Оракулы Гровера: projects/02-grover-oracles.md
       - 03. VQE для H2: projects/03-vqe-h2.md
       - 04. Qubit mapper: projects/04-qubit-mapper.md
+      - Стартовые проверки mapper: projects/starter/mapper/README.md
       - 05. Чип с KQCircuits: projects/05-kqcircuits-chip.md
   - Ресурсы:
       - Курсы: resources/courses.md

@@ -300,4 +300,4 @@ print(heavy_out.num_qubits, heavy_out.depth())
 
 ## ➡️ Что дальше
 
-Модуль 04 завершён. Дальше — [модуль 05 — Железо: платформы и устройство](../05-hardware/README.md). Общая картина — [ROADMAP.md](../../ROADMAP.md).
+Модуль 04 завершён. Для Core + Compiler следующий шаг — [Compiler Exit (~90 минут)](../../tests/compiler-exit-exam.md), затем **один** capstone: [01 — benchmark](../../projects/01-transpiler-benchmark.md) или [04 — mapper](../../projects/04-qubit-mapper.md). [Модуль 05 — hardware](../05-hardware/README.md) и [полный final 00–06](../../tests/final-exam.md) — дальнейшие элективы после соответствующих материалов. Общая картина — [ROADMAP.md](../../ROADMAP.md).

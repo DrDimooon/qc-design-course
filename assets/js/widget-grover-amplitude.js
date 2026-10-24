@@ -377,6 +377,10 @@
   }
 
   function init() {
+    if (global.QCWidget) {
+      global.QCWidget.onReducedMotion(stopAuto);
+    }
+    global.addEventListener('pagehide', stopAuto);
     /* Выбор помеченного элемента. */
     for (var i = 0; i < DIM; i++) {
       (function (idx) {
@@ -422,7 +426,11 @@
     }, 'Вернуть равномерную суперпозицию и обнулить счётчик итераций.');
 
     QC.dom.button('btn-auto', 'Авто', function () {
-      if (autoTimer) {
+      if (global.QCWidget && global.QCWidget.reducedMotion()) {
+        stopAuto();
+        doStep();
+        message = 'Одна итерация выполнена без таймера (уменьшение движения).';
+      } else if (autoTimer) {
         stopAuto();
         message = 'Авто-анимация остановлена.';
       } else {

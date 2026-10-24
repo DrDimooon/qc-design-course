@@ -123,7 +123,7 @@ qc = QuantumCircuit(1); qc.rz(Parameter('θ'), 0); после transpile и bindi
 
 ## Вопрос 15 (модуль 04)
 VF2Layout и VF2PostLayout в Qiskit — каков их правильный контекст?
-- A. VF2Layout ищет точное вложение interaction-графа в coupling map до routing; VF2PostLayout после routing/translation пере-раскладывает физическую расстановку по error-рейтам Target
+- A. VF2Layout ищет вложение interaction-графа до routing; VF2PostLayout ищет более выгодное физическое размещение уже маршрутизированной схемы по данным Target. Его стадия, условия и бюджет зависят от конфигурации: это не обязательно только после translation
 - B. Оба только про scheduling
 - C. VF2Layout работает только после routing
 - D. VF2 = глобальная унификация графов поверх all-to-all топологии

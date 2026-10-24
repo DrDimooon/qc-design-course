@@ -423,38 +423,84 @@ check('sample(rnd=0) не выбирает исход с нулевой веро
 
 console.log('соглашение Qiskit: сверка с установленным qiskit');
 (function () {
-  let hasQiskit = false;
+  const python = process.env.QC_PYTHON || 'python';
+  const required = process.env.QC_REQUIRE_QISKIT === '1';
   try {
-    execFileSync('python', ['-c', 'import qiskit, numpy'], {
+    execFileSync(python, ['-c',
+      'import importlib.util, sys; sys.exit(77) if importlib.util.find_spec("qiskit") is None else None; import qiskit, numpy'], {
       encoding: 'utf8', timeout: 60000, stdio: ['ignore', 'pipe', 'ignore']
     });
-    hasQiskit = true;
   } catch (e) {
-    console.log('  skip: интерпретатор python или qiskit не установлены (' +
-      (e.code || e.message) + ')');
+    const absent = e.code === 'ENOENT' || e.status === 77;
+    if (absent && !required) {
+      console.log('  skip: Python/Qiskit отсутствует; базовые JS-контракты проверены');
+    } else {
+      check('установленный Qiskit импортируется без ошибок', false,
+        absent ? 'QC_REQUIRE_QISKIT=1: эталонная сверка обязательна' : e.message);
+    }
     return;
   }
-  if (!hasQiskit) { return; }
+
+  // Схемы — общий вход, но состояния независимо вычисляют QC и настоящий Qiskit.
+  // Не округляем векторы до строк и сравниваем обе комплексные компоненты.
+  const one = (gate, target, theta) => ({ gate, target, theta });
+  const cx = (control, target) => ({ gate: 'cx', control, target });
+  const swap = (a, b) => ({ gate: 'swap', a, b });
+  const cases = [
+    ['h', 1, [one('h', 0)]],
+    ['h_s_nonzero_phase', 1, [one('h', 0), one('s', 0)]],
+    ['h_t_complex_phase', 1, [one('h', 0), one('t', 0)]],
+    ['ry', 1, [one('ry', 0, 0.7)]],
+    ['rx', 1, [one('rx', 0, -0.4)]],
+    ['h_rz_relative_phase', 1, [one('h', 0), one('rz', 0, 0.8)]],
+    ['h_y_complex_phase', 1, [one('h', 0), one('y', 0)]],
+    ['x_q0', 2, [one('x', 0)]],
+    ['x_q1', 2, [one('x', 1)]],
+    ['bell_cx01', 2, [one('h', 0), cx(0, 1)]],
+    ['bell_cx10', 2, [one('h', 1), cx(1, 0)]],
+    ['cx01_on_01', 2, [one('x', 0), cx(0, 1)]],
+    ['cx01_on_10', 2, [one('x', 1), cx(0, 1)]],
+    ['cx10_on_10', 2, [one('x', 1), cx(1, 0)]],
+    ['cx10_on_01', 2, [one('x', 0), cx(1, 0)]],
+    ['s_q0_populated_01', 2, [one('h', 0), one('s', 0)]],
+    ['t_q1_populated_10', 2, [one('h', 1), one('t', 1)]],
+    ['asymmetric_relative_phase', 2, [one('ry', 0, 0.9), one('h', 1), one('s', 0), cx(0, 1)]],
+    ['rotations_cx10', 2, [one('rx', 1, -0.4), one('ry', 0, 0.7), cx(1, 0)]],
+    ['swap_complex', 2, [one('h', 0), one('s', 0), one('x', 1), swap(0, 1)]],
+    ['x_q0_3', 3, [one('x', 0)]],
+    ['x_q1_3', 3, [one('x', 1)]],
+    ['x_q2_3', 3, [one('x', 2)]],
+    ['cx02_spectator', 3, [one('h', 0), one('t', 0), one('ry', 1, 0.3), cx(0, 2)]],
+    ['cx20_spectator', 3, [one('ry', 2, 0.7), one('s', 2), cx(2, 0), one('h', 1)]],
+    ['swap02_complex', 3, [one('ry', 0, 0.3), one('t', 0), one('h', 2), one('s', 2), swap(0, 2)]]
+  ].map(([name, n, ops]) => ({ name, n, ops }));
 
   const script = [
-    'import json',
-    'import numpy as np',
-    'from qiskit import QuantumCircuit, ClassicalRegister',
+    'import json, sys',
+    'from qiskit import QuantumCircuit',
     'from qiskit.quantum_info import Statevector, Operator',
-    'out = {}',
-    'c = QuantumCircuit(2); c.x(0); out["x_q0"] = np.round(Statevector(c).data.real, 9).tolist()',
-    'c = QuantumCircuit(2); c.x(1); out["x_q1"] = np.round(Statevector(c).data.real, 9).tolist()',
-    'c = QuantumCircuit(2); c.cx(0, 1); out["cx01"] = np.round(np.real(Operator(c).data), 9).astype(int).tolist()',
-    'c = QuantumCircuit(2); c.cx(1, 0); out["cx10"] = np.round(np.real(Operator(c).data), 9).astype(int).tolist()',
-    'c = QuantumCircuit(2); c.h(1); c.x(0); out["asym"] = np.round(Statevector(c).data.real, 9).tolist()',
-    'c = QuantumCircuit(2); c.x(1); out["x_q1_ket"] = np.round(Statevector(c).data.real, 9).tolist()',
-    'c = QuantumCircuit(2); c.s(0); _s = Statevector(c).data; out["s_q0"] = [[float(z.real), float(z.imag)] for z in _s]',
+    'out = {"states": {}, "matrices": {}}',
+    'def pairs(values): return [[float(z.real), float(z.imag)] for z in values]',
+    'for case in json.load(sys.stdin):',
+    '    c = QuantumCircuit(case["n"])',
+    '    for op in case["ops"]:',
+    '        gate = op["gate"]',
+    '        if gate == "cx": c.cx(op["control"], op["target"])',
+    '        elif gate == "swap": c.swap(op["a"], op["b"])',
+    '        elif gate in ("rx", "ry", "rz"): getattr(c, gate)(op["theta"], op["target"])',
+    '        else: getattr(c, gate)(op["target"])',
+    '    out["states"][case["name"]] = pairs(Statevector(c).data)',
+    'for name, control, target in (("cx01", 0, 1), ("cx10", 1, 0)):',
+    '    c = QuantumCircuit(2); c.cx(control, target)',
+    '    out["matrices"][name] = [pairs(row) for row in Operator(c).data]',
     'print(json.dumps(out))'
   ].join('\n');
 
   let raw;
   try {
-    raw = execFileSync('python', ['-c', script], { encoding: 'utf8', timeout: 120000 }).trim();
+    raw = execFileSync(python, ['-c', script], {
+      input: JSON.stringify(cases), encoding: 'utf8', timeout: 120000
+    }).trim();
   } catch (e) {
     /* qiskit есть, но сценарий упал — это провал, а не «недоступен». */
     check('сверка с Qiskit выполняется без ошибок', false,
@@ -470,34 +516,28 @@ console.log('соглашение Qiskit: сверка с установленн
     return;
   }
 
-  const asArr = function (v) { return v.map(function (c) { return Number(c.re.toFixed(9)); }); };
-  check('совпадает с Qiskit: X(q0)|00>', JSON.stringify(asArr(xq0)) === JSON.stringify(ref.x_q0),
-    JSON.stringify(asArr(xq0)) + ' vs ' + JSON.stringify(ref.x_q0));
-  check('совпадает с Qiskit: X(q1)|00>', JSON.stringify(asArr(xq1)) === JSON.stringify(ref.x_q1),
-    JSON.stringify(asArr(xq1)) + ' vs ' + JSON.stringify(ref.x_q1));
-  check('совпадает с Qiskit: Operator(CX(0,1))',
-    JSON.stringify(mat4AsInt(QC.MAT4.CNOT)) === JSON.stringify(ref.cx01),
-    JSON.stringify(mat4AsInt(QC.MAT4.CNOT)) + ' vs ' + JSON.stringify(ref.cx01));
-  check('совпадает с Qiskit: MAT4.CNOT_T = Operator(CX(1,0))',
-    JSON.stringify(mat4AsInt(QC.MAT4.CNOT_T)) === JSON.stringify(ref.cx10),
-    JSON.stringify(mat4AsInt(QC.MAT4.CNOT_T)) + ' vs ' + JSON.stringify(ref.cx10));
-  check('совпадает с Qiskit: несимметричное состояние H(q1), X(q0)',
-    JSON.stringify(asArr(asym2)) === JSON.stringify(ref.asym),
-    JSON.stringify(asArr(asym2)) + ' vs ' + JSON.stringify(ref.asym));
-  check('совпадает с Qiskit: CX(0,1) на 0.6|00> + 0.8|01>', (function () {
-    const mine = asArr(skewCx01);
-    const want = [0.6, 0, 0, 0.8];
-    if (mine.length !== 4) { return false; }
-    for (let i = 0; i < 4; i++) { if (Math.abs(mine[i] - want[i]) > 1e-9) { return false; } }
-    return true;
-  })());
-  check('совпадает с Qiskit: S(q0) даёт фазу только у |01>', (function () {
-    const mine = QC.sv.apply1(QC.sv.basis(2, 0), QC.GATES.S, 0, 2);
-    const same = mine.length === ref.s_q0.length && mine.every(function (c, i) {
-      return Math.abs(c.re - ref.s_q0[i][0]) < 1e-9 && Math.abs(c.im - ref.s_q0[i][1]) < 1e-9;
+  const fromPairs = values => values.map(z => QC.C(z[0], z[1]));
+  cases.forEach(function (testCase) {
+    let state = QC.sv.basis(testCase.n, 0);
+    testCase.ops.forEach(function (op) {
+      if (op.gate === 'cx' || op.gate === 'swap') {
+        const a = op.gate === 'cx' ? op.control : op.a;
+        const b = op.gate === 'cx' ? op.target : op.b;
+        const matrix = op.gate === 'swap' ? QC.MAT4.SWAP :
+          (a < b ? QC.MAT4.CNOT : QC.MAT4.CNOT_T);
+        state = QC.sv.apply2(state, matrix, Math.max(a, b), Math.min(a, b), testCase.n);
+      } else {
+        const gate = QC.GATES[op.gate.toUpperCase()] || QC.GATES[op.gate](op.theta);
+        state = QC.sv.apply1(state, gate, op.target, testCase.n);
+      }
     });
-    return same;
-  })());
+    check('совпадает с Qiskit (complex): ' + testCase.name,
+      vecClose(state, fromPairs(ref.states[testCase.name]), 1e-9) && close(QC.sv.norm(state), 1, 1e-9));
+  });
+  [['cx01', QC.MAT4.CNOT], ['cx10', QC.MAT4.CNOT_T]].forEach(function ([name, matrix]) {
+    check('совпадает с Qiskit: Operator(' + name + ')',
+      matrix.every((row, index) => vecClose(row, fromPairs(ref.matrices[name][index]), 1e-9)));
+  });
 })();
 
 console.log('');

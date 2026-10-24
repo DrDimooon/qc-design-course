@@ -37,14 +37,15 @@ tags: [transpiler, sabre, coupling-map, noise-aware, co-design, routing, qubit-m
 
 | Лаба | Содержание |
 |------|------------|
-| [lab-04-platform-comparison.md](lab-04-platform-comparison.md) | Одна схема (QFT-8 / QAOA maxcut), транспиляция под 3 топологии (линейная, heavy-hex, all-to-all), замер depth / SWAP / 2q-gates (SWAP считается при базисе с гейтом `swap` — иначе он декомпозируется в CX и не виден), 5 seed'ов с усреднением, сравнение таблицей |
+| [lab-04-platform-comparison.md](lab-04-platform-comparison.md) | QFT-8 / QAOA maxcut под line, heavy-hex и all-to-all; depth, финальные явные SWAP и 2q-инструкции, 5 seeds с оценкой разброса. Для Core без QAOA используйте часть QFT-8. Финальный SWAP-счёт не равен числу вставок роутера |
 | [lab-05-sabre-routing.md](lab-05-sabre-routing.md) | Свой жадный router «руками» + сравнение с Qiskit SabreSwap; исследование параметров SabreSwap (heuristic, trials), график качество vs время, осмысление, когда важны детали реализации |
 
 ## Как проходить модуль
 
 - Порядок: 01 → 02 → 03 → 04 → 05 → lab-04 → lab-05. Лабы опираются на текст уроков: lab-04 закрывает уроки 01–04, lab-05 — урок 03.
 - Правило прогресса прежнее: урок → вопросы «Проверь себя» → тест → лаба. Не переходите к lab-04, пока не закрыт урок 04.
-- Все примеры кода рассчитаны на **Qiskit ≥ 2.0** (проверено на 2.6.0; `pip install qiskit qiskit-ibm-runtime`, см. [лабу 00](../00-fundamentals/lab-00-env-setup.md)). Отдельные фрагменты версионно-зависимы и помечены в тексте: `SabreSwap(..., trials=...)` существует только начиная с Qiskit 2.0 (в 1.x те же настройки назывались `swap_trials`/`layout_trials`), а пасс `DynamicalDecoupling` в Qiskit 2.x удалён — используйте `PadDynamicalDecoupling`.
+- Примеры проверены на **Qiskit 2.6.0**; окружение устанавливайте по [лабе 00](../00-fundamentals/lab-00-env-setup.md). `SabreSwap.trials` существовал до Qiskit 2.0; `swap_trials`/`layout_trials` — параметры **SabreLayout**, а не прежние имена `SabreSwap.trials`. Задавайте trials явно, поскольку значение по умолчанию зависит от доступных CPU. В Qiskit 2.x вместо удалённого `DynamicalDecoupling` используется `PadDynamicalDecoupling`.
+- Закройте [Compiler Exit](../../tests/compiler-exit-exam.md) за ~90 минут перед capstone 01/04. Это часть существующего бюджета ~36 ч вместо части повторения, а не дополнительный модуль. [Полный final 00–06](../../tests/final-exam.md) — элективная проверка после соответствующих материалов.
 - Научные статьи, на которые опирается модуль (все — на arxiv.org):
   - [arXiv:1809.02573](https://arxiv.org/abs/1809.02573) — SABRE: Tackling the Qubit Mapping Problem for NISQ-Era Quantum Devices (ASPLOS 2019);
   - [arXiv:2207.14482](https://arxiv.org/abs/2207.14482) — Domain-Specific Quantum Architecture Optimization;
@@ -60,6 +61,20 @@ tags: [transpiler, sabre, coupling-map, noise-aware, co-design, routing, qubit-m
 - [ ] Пишете собственные трансформационные и аналитические пассы.
 - [ ] Компилируете с учётом шума конкретного бэкенда и оцениваете вклад каждой компоненты ошибки.
 - [ ] Аргументируете выбор связности под приложение и понимаете идею co-design.
+
+## Матрица навыков, практики и проверки
+
+Переход к самостоятельности стройте внутри существующих страниц: **разобранный пример → completion → самостоятельная задача → перенос**. В [уроке 02](02-transpiler-internals.md) («Как писать свой пасс») разберите готовый `TwoQubitProfile`, затем заполните вариант подсчёта/проверки самостоятельно. В [уроке 03](03-routing-mapping-sabre.md) («Мини-эксперимент: transpile + вариация seeds») разберите готовый прогон и дополните сбор метрик. Самостоятельный опыт — QFT-часть lab-04 или новый вход lab-05; перенос — тот же граф с другими ошибками из урока 04. Ссылки ниже ведут на страницы; названия разделов помогают найти соответствующие примеры и задания.
+
+| Результат | Где учим (разобранный пример) | Где тренируем (completion → самостоятельно) | Где проверяем |
+|---|---|---|---|
+| Шесть стадий, AnalysisPass/TransformationPass | [02 — внутренности transpiler](02-transpiler-internals.md), «StagedPassManager: шесть этапов», «Как писать свой пасс» | Подсчёт 2q в пассе → свой вариант пасса с проверкой семантики | [Квиз 04](../../tests/04-quiz.md), В5–9; [Exit](../../tests/compiler-exit-exam.md), A1/B |
+| Layout, routing, SABRE и конечная карта | [03 — routing/mapping](03-routing-mapping-sabre.md), «SABRE» и мини-эксперимент | Дополнение таблицы метрик → [lab-05](lab-05-sabre-routing.md), «Часть A. Свой жадный router» и «Часть B. Параметры SabreSwap» на новом входе | Квиз 04 В1–4; Exit A2/B; [проект 04](../../projects/04-qubit-mapper.md) |
+| Семантика и объективное сравнение метрик | [lab-04](lab-04-platform-comparison.md), «Как читать метрики» | Разобранная таблица → «Расширенное задание: QFT-8» и собственный отчёт | Exit B/C/D; [проект 01](../../projects/01-transpiler-benchmark.md) |
+| Target и шумовой proxy без подмены fidelity | [04 — noise-aware](04-noise-aware-compilation.md), «Как устройство видно из Qiskit: Target и свойства» | Дополнение score → те же рёбра с другими error rates (transfer) | Квиз 04 В10–13; Exit D3; анализ выбранного capstone |
+| Выбор связности под workload | [01 — архитектуры](01-architecture-models.md), [05 — co-design](05-architecture-optimization.md) | QFT-часть lab-04 → обоснование выбора и его ограничений | Квиз 04 В14–16; Exit D1/D4; выводы capstone |
+
+Для минимального Core-03 достаточно Grover/QFT: QAOA-часть lab-04 можно заменить её QFT-частью, а для нового входа lab-05 использовать малую статическую схему из 1q/2q-гейтов. Упоминания QEC и статей в обзоре не превращают их в предпосылки Exit. Контрольные артефакты — код проверок, сырые строки эксперимента и объяснение; одно чтение страницы не закрывает практический навык.
 
 ## ✅ Проверь себя
 

@@ -52,25 +52,17 @@
     return v;
   }
 
-  /* Текст цепи: «q0: H, S; q1: X; CNOT(q0->q1)». */
+  /* Хронологический текст цепи, включая порядок между разными кубитами. */
   function chainText() {
-    var perQubit = [[], []];
-    var cnots = [];
+    var parts = [];
     for (var i = 0; i < ops.length; i++) {
       var op = ops[i];
       if (op.kind === '1') {
-        perQubit[op.target].push(op.name);
+        parts.push(op.name + '(q' + op.target + ')');
       } else {
-        cnots.push('CNOT(q' + op.qCtrl + '->q' + op.qTgt + ')');
+        parts.push('CNOT(q' + op.qCtrl + '->q' + op.qTgt + ')');
       }
     }
-    var parts = [];
-    for (var q = 0; q < NQ; q++) {
-      if (perQubit[q].length) {
-        parts.push('q' + q + ': ' + perQubit[q].join(', '));
-      }
-    }
-    parts = parts.concat(cnots);
     return parts.length ? parts.join('; ') : 'схема пуста';
   }
 
@@ -287,7 +279,9 @@
     var h = c.height;
     var pal = palette();
 
-    var padL = 76;
+    ctx.font = '13px sans-serif';
+    var padL = Math.ceil(Math.max(ctx.measureText('q1 (старший)').width,
+      ctx.measureText('q0 (младший)').width)) + 20;
     var padR = 20;
     var padT = 34;               /* верхний отступ: под подписи шагов */
     var x0 = padL;
@@ -330,7 +324,12 @@
       ctx.font = '13px sans-serif';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillText('Схема пуста: нажмите кнопку гейта', (x0 + x1) / 2, (y0 + y1) / 2);
+      if (w < 360) {
+        ctx.fillText('Схема пуста', (x0 + x1) / 2, (y0 + y1) / 2 - 9);
+        ctx.fillText('Нажмите гейт', (x0 + x1) / 2, (y0 + y1) / 2 + 9);
+      } else {
+        ctx.fillText('Схема пуста: нажмите кнопку гейта', (x0 + x1) / 2, (y0 + y1) / 2);
+      }
       ctx.restore();
       return;
     }

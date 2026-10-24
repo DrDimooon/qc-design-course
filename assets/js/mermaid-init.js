@@ -36,14 +36,28 @@
     // навигации) уже отрисованные схемы не трогают.
     // Каждый блок отдельно: сбой одной схемы с синтаксической ошибкой
     // не должен ломать отрисовку остальных.
-    var pending = document.querySelectorAll('.mermaid:not([data-processed])');
-    for (var i = 0; i < pending.length; i++) {
+    // Private fence class prevents Material's own Mermaid renderer from replacing
+    // the same node while this asynchronous render is measuring SVG labels.
+    var pending = document.querySelectorAll('.qc-mermaid:not([data-processed]):not([data-qc-rendering])');
+    function render(node) {
+      // SuperFences can emit <pre class="mermaid"><code>...</code></pre>.
+      // Mermaid reads innerHTML, so remove the code wrapper before rendering.
+      var code = node.querySelector('code');
+      if (code) { node.textContent = code.textContent; }
+      node.setAttribute('data-qc-rendering', 'true');
+      function done() { node.removeAttribute('data-qc-rendering'); }
       try {
-        window.mermaid.run({ nodes: [pending[i]] });
+        // run() is asynchronous: try/catch alone cannot catch its rejection.
+        Promise.resolve(window.mermaid.run({ nodes: [node] })).then(done, function (error) {
+          done();
+          console.warn('mermaid block failed:', error);
+        });
       } catch (e) {
+        done();
         console.warn('mermaid block failed:', e);
       }
     }
+    for (var i = 0; i < pending.length; i++) { render(pending[i]); }
   }
 
   // Двойная инициализация: document$ в Material срабатывает и на первой
