@@ -7,12 +7,21 @@
  *
  * Устройство:
  *   ops      — цепочка операций: {kind:'1', name, gate, target}
- *              или {kind:'2', name:'CNOT', mat, q1, q2};
+ *              или {kind:'2', name:'CNOT', mat, qA, qB, qCtrl, qTgt};
+ *              qA/qB — порядок базиса матрицы (старший, младший),
+ *              qCtrl/qTgt — направление для подписи (контроль -> цель);
  *   counts   — счётчики результатов измерения по четырём исходам;
  *   target   — выбранный целевой кубит для однокубитных гейтов.
  *
  * Состояние не накапливается: при любом изменении цепочки оно пересчитывается
  * с нуля — QC.sv.basis(2, 0), затем QC.sv.applyOp для каждой операции.
+ *
+ * Соглашение — Qiskit, единственное во всём курсе (см. CONVENTIONS.md):
+ * кет |q1 q0>, q0 — младший бит; амплитуды |00>, |01>, |10>, |11>
+ * (index = 2*q1 + q0). Счётчики виджета индексируются тем же номером
+ * амплитуды (это эмуляция, не counts железа). На схеме сверху рисуется q1,
+ * снизу q0, чтобы колонка кетов |q1 q0> читалась сверху вниз так же, как
+ * напечатана.
  */
 (function () {
   'use strict';
@@ -52,7 +61,7 @@
       if (op.kind === '1') {
         perQubit[op.target].push(op.name);
       } else {
-        cnots.push('CNOT(q' + op.q1 + '->q' + op.q2 + ')');
+        cnots.push('CNOT(q' + op.qCtrl + '->q' + op.qTgt + ')');
       }
     }
     var parts = [];
@@ -88,8 +97,15 @@
     render();
   }
 
+  /* CNOT здесь — cx(0, 1) из Qiskit: контроль q0 (младший), цель q1.
+     Матрица MAT4.CNOT читается в базисе |q1 q0>, поэтому базисные индексы —
+     (qA, qB) = (1, 0). Направление для подписи храним отдельно:
+     qCtrl = 0, qTgt = 1. */
+  function makeCnotOp() {
+    return { kind: '2', name: 'CNOT', mat: QC.MAT4.CNOT, qA: 1, qB: 0, qCtrl: 0, qTgt: 1 };
+  }
   function addCnot() {
-    ops.push({ kind: '2', name: 'CNOT', mat: QC.MAT4.CNOT, q1: 0, q2: 1 });
+    ops.push(makeCnotOp());
     resetCounts();
     render();
   }
@@ -113,7 +129,7 @@
     var n = 2 + Math.floor(Math.random() * 5);
     for (var i = 0; i < n; i++) {
       if (ops.length && Math.random() < 0.25) {
-        ops.push({ kind: '2', name: 'CNOT', mat: QC.MAT4.CNOT, q1: 0, q2: 1 });
+        ops.push(makeCnotOp());
       } else {
         var name = SINGLE_GATES[Math.floor(Math.random() * SINGLE_GATES.length)];
         ops.push({ kind: '1', name: name, gate: QC.GATES[name], target: Math.floor(Math.random() * NQ) });
@@ -225,6 +241,44 @@
     ctx.restore();
   }
 
+  /*
+   * Геометрия дорожек схемы. Сверху — q1 (старший бит), снизу — q0 (младший):
+   * колонка читается так же, как напечатанный кет |q1 q0>. Это собственный
+   * порядок дорожек виджета, как draw(reverse_bits=True) в Qiskit; на вектор
+   * состояния он не влияет.
+   *
+   * Вынесено из drawCircuit в чистую функцию, чтобы тест мог проверить
+   * раскладку дорожек без canvas: wireY(q) — y-координата дорожки кубита q,
+   * то есть меньшее y соответствует q1.
+   */
+  function layout(h) {
+    var padT = 34, padB = 26;
+    var areaH = Math.max(40, h - padT - padB);
+    var y0 = padT + areaH * 0.3;   /* верхняя дорожка — q1 */
+    var y1 = padT + areaH * 0.7;   /* нижняя дорожка — q0 */
+    return {
+      yTop: y0,
+      yBottom: y1,
+      wireY: function (q) { return (q === 1) ? y0 : y1; }
+    };
+  }
+
+  /* Точки, которые рисует CNOT для операции op: кружок контроля и три
+   * штриха креста цели. Возвращает {ctrlY, tgtY} — по ним тест сверяет,
+   * что контроль и цель стоят на дорожках, заданных операцией, а не на
+   * жёстко прописанных «верх/низ». */
+  function cnotGeometry(op, h) {
+    var L = layout(h);
+    return {
+      ctrlQubit: op.qCtrl,
+      tgtQubit: op.qTgt,
+      ctrlY: L.wireY(op.qCtrl),
+      tgtY: L.wireY(op.qTgt),
+      topY: L.yTop,
+      bottomY: L.yBottom
+    };
+  }
+
   function drawCircuit() {
     var c = QC.dom.canvas('circuit');
     if (!c) { return; }
@@ -235,13 +289,16 @@
 
     var padL = 76;
     var padR = 20;
-    var padT = 34;
-    var padB = 26;
+    var padT = 34;               /* верхний отступ: под подписи шагов */
     var x0 = padL;
     var x1 = Math.max(x0 + 80, w - padR);
-    var areaH = Math.max(40, h - padT - padB);
-    var y0 = padT + areaH * 0.3;
-    var y1 = padT + areaH * 0.7;
+
+    /* Раскладка дорожек — из layout(): сверху q1, снизу q0.
+       Один источник истины и для рисунка, и для теста. */
+    var L = layout(h);
+    var wireY = L.wireY;
+    var y0 = L.yTop;
+    var y1 = L.yBottom;
 
     ctx.clearRect(0, 0, w, h);
 
@@ -263,8 +320,8 @@
     ctx.font = '13px sans-serif';
     ctx.textAlign = 'right';
     ctx.textBaseline = 'middle';
-    ctx.fillText('кубит 0', x0 - 12, y0);
-    ctx.fillText('кубит 1', x0 - 12, y1);
+    ctx.fillText('q1 (старший)', x0 - 12, y0);
+    ctx.fillText('q0 (младший)', x0 - 12, y1);
     ctx.restore();
 
     if (!ops.length) {
@@ -298,9 +355,12 @@
       }
 
       if (op.kind === '1') {
-        drawGate(ctx, op.name, cx, op.target === 0 ? y0 : y1, boxW, boxH, pal);
+        drawGate(ctx, op.name, cx, wireY(op.target), boxW, boxH, pal);
       } else {
-        drawCnot(ctx, cx, y0, y1, pal);
+        /* Контроль и цель берём из операции, а не из «верх/низ»: иначе
+           рисунок расходится с вычислением. CNOT здесь — cx(0, 1):
+           контроль q0 (нижняя дорожка), цель q1 (верхняя). */
+        drawCnot(ctx, cx, wireY(op.qCtrl), wireY(op.qTgt), pal);
       }
     }
   }
@@ -376,14 +436,34 @@
           'Добавить гейт ' + name + ' на выбранный кубит');
       })(SINGLE_GATES[i]);
     }
-    QC.dom.button('gate-cnot', 'CNOT', addCnot, 'Добавить CNOT: управление q0, цель q1');
-    QC.dom.button('target-q0', 'q0', function () { setTarget(0); }, 'Выбрать кубит 0 целью гейта');
-    QC.dom.button('target-q1', 'q1', function () { setTarget(1); }, 'Выбрать кубит 1 целью гейта');
+    QC.dom.button('gate-cnot', 'CNOT', addCnot, 'Добавить cx(0, 1): контроль q0 (младший), цель q1 (старший)');
+    QC.dom.button('target-q0', 'q0', function () { setTarget(0); }, 'Выбрать q0 (младший бит, нижняя дорожка) целью гейта');
+    QC.dom.button('target-q1', 'q1', function () { setTarget(1); }, 'Выбрать q1 (старший бит, верхняя дорожка) целью гейта');
     QC.dom.button('undo', 'Удалить последний', undo, 'Убрать последний гейт из цепочки');
     QC.dom.button('random', 'Случайная схема', randomCircuit, 'Собрать случайную схему из нескольких гейтов');
     QC.dom.button('measure', 'Измерить ' + SHOTS + ' раз', measure, 'Выполнить ' + SHOTS + ' измерений схемы');
     QC.dom.button('reset', 'Сброс', reset, 'Очистить схему и счётчики измерений');
   }
+
+  /*
+   * Публичный интерфейс для проверок (не для страницы).
+   * Позволяет тесту убедиться, что рисунок CNOT строится по операции, а не
+   * по жёстко прописанным дорожкам: cnotGeometry(makeCnotOp()) обязан дать
+   * контроль на дорожке q0 и цель на дорожке q1.
+   */
+  window.CircuitPlayground = {
+    layout: layout,
+    cnotGeometry: cnotGeometry,
+    makeCnotOp: makeCnotOp,
+    makeGateOp: function (name, target) {
+      return { kind: '1', name: name, gate: QC.GATES[name], target: target };
+    },
+    chainText: function (list) {
+      var saved = ops;
+      ops = list;
+      try { return chainText(); } finally { ops = saved; }
+    }
+  };
 
   function init() {
     if (!QC.dom.el('circuit') || !QC.dom.el('state')) { return; }

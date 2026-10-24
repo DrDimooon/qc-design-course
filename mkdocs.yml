@@ -66,6 +66,7 @@ nav:
       - README: README.md
       - ROADMAP: ROADMAP.md
       - PROGRESS: PROGRESS.md
+      - Соглашение о кубитах: CONVENTIONS.md
       - Интерактивный слой: INTERACTIVE.md
   - Модуль 00 — Фундамент:
       - О модуле: curriculum/00-fundamentals/README.md
@@ -117,13 +118,14 @@ nav:
       - "02. Разбор: Anthropic / Claude": curriculum/06-publications/02-anthropic-efficient-circuits.md
       - "03. Разбор: Google Willow и QEC": curriculum/06-publications/03-google-willow-qec.md
   - Тесты:
+      - Входная диагностика 00: tests/diagnostic-00.md
       - Квиз 00: tests/00-quiz.md
       - Квиз 01: tests/01-quiz.md
       - Квиз 02: tests/02-quiz.md
       - Квиз 03: tests/03-quiz.md
       - Квиз 04: tests/04-quiz.md
       - Квиз 05: tests/05-quiz.md
-      - Certification quiz: tests/certification-quiz.md
+      - Qiskit API readiness (промежуточная проверка): tests/certification-quiz.md
       - Final exam: tests/final-exam.md
       - Флеш-карты: tests/flashcards.md
       - Расписание повторений: tests/flashcards-schedule.md

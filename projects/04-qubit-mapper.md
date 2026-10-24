@@ -47,7 +47,27 @@ class Graph:                       # adjacency list
 
 ### Шаг 2. Тестовые схемы
 
-Схемы без привязки к топологии: `QFT(5)`, `QuantumVolume(5, depth=5, seed=42)`, случайные плотные 2q-схемы (`random_circuit(6, depth=10, seed=...)`), Grover-оракул на 6 кубитах.
+Схемы без привязки к топологии — **только не-deprecated API** (проверено на Qiskit 2.6.0):
+
+```python
+from qiskit import QuantumCircuit
+from qiskit.circuit.library import quantum_volume
+from qiskit.circuit.random import random_circuit
+from qiskit.synthesis.qft import synth_qft_full
+
+qft  = synth_qft_full(5, do_swaps=False)        # замена QFT(5, do_swaps=False)
+qv   = quantum_volume(5, depth=5, seed=42)      # замена QuantumVolume(...) — функция, а не класс
+rnd  = random_circuit(6, depth=10, seed=42)     # есть в qiskit.circuit.random
+# Grover-оракул на 6 кубитах соберите вручную (diffuser H/X/MCX/X/H), класс GroverOperator — legacy
+```
+
+- `synth_qft_full(n, do_swaps=False)` — QFT без финальных SWAP-перестановок. Это **не**
+  `QFTGate(n)`: gate-версия включает swaps, и опции «без swaps» у неё нет.
+- `quantum_volume(n, depth=None, seed=None)` возвращает `QuantumCircuit`; по умолчанию
+  схема состоит из блоков `unitary` (10 блоков при `n=5, depth=5`), которые роутеру
+  всё равно нужно разложить до 2q-гейтов — учтите это при подсчёте SWAP.
+- `random_circuit(n, depth, max_operands=4, ...)` существует в Qiskit 2.6; при
+  `max_operands > 2` в схеме будут 3-4-кубитные гейты, которые тоже требуют роутинга.
 
 ### Шаг 3. Роутер (слой за слоем)
 
@@ -77,7 +97,10 @@ from qiskit.quantum_info import Operator
 
 def perm_matrix(phys, n):
     """Матрица перестановки «логические кубиты -> физические провода».
-    Индексы — как в Qiskit: бит k отвечает за кубит k (q0 — младший)."""
+
+    `phys[i]` — физический провод, на котором оказался логический кубит `i`.
+    Индексы — как в Qiskit: бит k отвечает за кубит k (q0 — младший).
+    """
     Q = np.zeros((2 ** n, 2 ** n))
     for src in range(2 ** n):
         bits = [(src >> k) & 1 for k in range(n)]
@@ -95,37 +118,83 @@ assert np.allclose(Operator(routed).data, Q @ Operator(original).data)
 
 То же самое можно проверить на состояниях: подайте в роутерованную схему
 `Q @ psi` (тот же логический вход, разложенный по физическим проводам) и сравните
-выход с `Q @ (U @ psi)`. Проверка на схеме `h(0); cx(0,1); cx(1,2); cx(0,2)` на
-линии 0–1–2 проходит: жадный роутер вставляет 2 SWAP и даёт `phys = [2, 0, 1]`.
+выход с `Q @ (U @ psi)`.
+
+**Проверенный пример (Qiskit 2.6.0).** Для схемы `h(0); cx(1,2); cx(0,1); h(2);
+cx(0,2); x(1); cx(1,2)` на линии 0–1–2 `TranspileLayout.final_index_layout()`
+возвращает `[0, 2, 1]` для seeds 1, 2, 3, 42, 1337 (когда layout зафиксирован
+`initial_layout=[0,1,2]`), и `np.allclose` с `Q @ Operator(qc).data` — `True`.
+Для случайной `random_circuit(4, depth=6, seed=3, max_operands=2)` на линии 0–1–2–3
+layout зависит от seed (`[2,0,1,3]` при seed=1, `[0,2,3,1]` при seed=42) — поэтому
+`phys` нельзя «угадать», его возвращает именно роутер.
+
+> `final_index_layout()` в Qiskit 2.6 возвращает список `phys[i]` = физический провод
+> для логического кубита `i` — ровно в той же конвенции, что и ваш `phys`, так что
+> `Q = perm_matrix(out.layout.final_index_layout(), n)` можно использовать для проверки
+> своего роутера через Sabre как oracle. Если `final_index_layout()` недоступен в
+> вашей версии, то же даёт `out.layout.final_layout` (объект `Layout`,
+> «physical → logical» — тогда нужна обратная перестановка).
+
+Прямое сравнение `Operator(routed).equiv(Operator(original))` здесь даёт `False`
+(проверено) — схемы живут на разных проводах и связаны перестановкой; используйте
+только проверку с `Q`.
 
 ### Шаг 4. Сравнение с Qiskit
 
 ```python
 from qiskit import transpile
+init = list(range(qc.num_qubits))          # trivial layout: тот же старт, что у вашего роутера
 for seed in (1, 2, 3, 42, 1337):
     out = transpile(qc, coupling_map=cmap, routing_method="sabre",
-                    basis_gates=["rz", "sx", "x", "cx"], seed_transpiler=seed)
+                    basis_gates=["rz", "sx", "x", "cx"],
+                    initial_layout=init, seed_transpiler=seed)
 ```
 
-Захват: число SWAP у вашего роутера vs min/med/max из Sabre-run; depth каждого из вариантов.
+Считайте метрики так же, как в Capstone 01: `2q = sum(len(i.qubits) == 2 for i in
+out.data)`, `swap = out.count_ops().get("swap", 0)`, `depth = out.depth()`,
+`phys = out.layout.final_index_layout()`.
+
+**Фиксируйте `initial_layout` для честного сравнения.** Без него Sabre сначала
+выбирает собственный layout (SabreLayout), и тогда вы сравниваете «routing + layout»
+против «routing при trivial layout» — это разные задачи. Ещё две тонкости:
+
+- В Qiskit 2.6 после routing SWAP-гейты часто **растворяются** при переводе в
+  `cx`/`cz`-базис, и финальный `count_ops("swap")` может быть `0` (проверено).
+  Базис `["rz","sx","x","swap"]` **не универсален** — `BasisTranslator` упадёт с
+  `TranspilerError` на `cp`/`h`, так что «просто оставить swap в базисе» не работает.
+  Честный вариант — оценивать «стоимость маршрутизации» как `cx_итог − cx_без_роутинга`
+  (например, транспилировать ту же схему с `coupling_map=None` либо на все-ко-всем
+  топологии) и явно так и подписать колонку. Второй вариант — перехватить routing-стадию
+  через `pm.run(qc, callback=...)`, но см. оговорки про не-один-вызов-на-стадию в
+  Capstone 01 (Шаг 5).
+- Даже на простой топологии (линия/кольцо из `n` кубитов) многие схемы требуют
+  routing. Чтобы отделить «не тот layout» от «не та SWAP-стратегия», сравнивайте
+  свой `phys` с `final_index_layout()` Sabre, а не только итоговые counts.
 
 ### Шаг 5. Сравнительная таблица
 
-| Схема | Топология | Ваш SWAP | Sabre SWAP (min) | Ваша depth | Sabre depth (min) | Ваше время, мс | Sabre время, мс |
+| Схема | Топология | Ваш SWAP | Sabre SWAP (min/med/max по seeds) | Ваша depth | Sabre depth (min) | Ваше время, мс | Sabre время, мс |
 |---|---|---|---|---|---|---|---|
 
-Вычислите ratios: overhead/quality. Важная деталь «честного» сравнения: Sabre может сначала выбрать начальный layout — поэтому дополнительно прогоните Sabre с фиксированным trivial layout — справедливое сравнение с вашим trivial-layout роутером.
+Вычислите ratios: overhead/quality. Время измеряйте `time.perf_counter()` с прогревом
+и фиксированными threads (как в Capstone 01) — иначе разница будет шумом машины.
 
 ### Шаг 6. Выводы
 
-Обсудите: (1) когда ваша жадная эвристика догоняет Sabre (редкий 2q-конфликт, простые графы); (2) почему routing действительно трудна (сведение к token swapping на графах — NP-hard); (3) что терпит главный выигрыш Sabre: co-optimization layout+route, а не только route.
+Обсудите, опираясь на числа: (1) в каких случаях ваша жадная эвристика близка к Sabre
+(мало 2q-конфликтов, простые графы) и в каких — отстаёт, и насколько (в SWAP/depth);
+(2) почему routing трудна (сведение к token swapping на графах — NP-hard);
+(3) какой вклад даёт именно co-optimization layout+route: сравните Sabre с
+`initial_layout=trivial` и без него. Не утверждайте заранее, что «кольцо удваивает
+SWAP» или что «Sabre всегда лучше в k раз» — это гипотезы, которые нужно проверить
+и показать числами (у линии и кольца на одинаковом `n` одинаковое число рёбер).
 
 ## Критерии приёмки
 
 - [ ] Роутер работает на 4 топологиях и >= 4 схемах и возвращает схему вместе с картой `phys` (логический кубит -> физический провод).
-- [ ] Число SWAP, depth и время — таблица сравнения с Sabre на 5 seeds.
-- [ ] Проверка корректности: роутерованная схема даёт исходную унитарность с точностью до перестановки кубитов — `Operator(routed).data == Q @ Operator(original).data` (см. Шаг 3a; прямое `Operator(routed).equiv(Operator(original))` здесь всегда `False`, потому что схемы живут на разном числе кубитов).
-- [ ] В README решения — выводы с числами, не менее 3 содержательных утверждений.
+- [ ] «Стоимость маршрутизации» (вставленные SWAP или `Δ2q = 2q_routed − 2q_без_роутинга`), depth и время — таблица сравнения с Sabre на 5 seeds, при **одинаковом `initial_layout`** у Sabre и у вас.
+- [ ] Проверка корректности: роутерованная схема даёт исходную унитарность с точностью до перестановки кубитов — `np.allclose(Operator(routed).data, Q @ Operator(original).data)`, где `Q` построена по `phys` (см. Шаг 3a). Прямое `Operator(routed).equiv(Operator(original))` здесь даёт `False` (проверено) — это не баг.
+- [ ] В README решения — выводы с числами, не менее 3 содержательных утверждений, каждое проверено на данных (без заранее заданных «трендов» вроде «кольцо удваивает SWAP»).
 - [ ] (bonus) Реализация второй эвристики (расстояние до цели + степень свободы узла).
 
 ## Расширения

@@ -17,8 +17,8 @@ tags: [qiskit, transpiler, benchmarking, coupling-map, depth, swaps, noise-aware
 
 - программно управлять настройками транспиляции (`generate_preset_pass_manager`, уровень, seed);
 - строить и перебирать топологии: line / heavy-hex-подобные coupling maps;
-- считать метрики схем (depth, size, count_ops, num_nonlocal_gates) и корректно определять, сколько SWAP «вставил» именно роутер;
-- строить честный benchmark: фиксированные seeds, повторения, воспроизводимость;
+- считать метрики схем (depth, точное число 2q-инструкций, `num_nonlocal_gates`, `count_ops`) и корректно определять, сколько SWAP «вставил» именно роутер;
+- строить честный benchmark: фиксированные seeds, повторения, медиана/IQR/min–max, время компиляции и контроль конфаундеров;
 - создавать понятные таблицы/графики и писать выводы, а не «сухие цифры».
 
 ## Предварительные модули
@@ -32,46 +32,105 @@ tags: [qiskit, transpiler, benchmarking, coupling-map, depth, swaps, noise-aware
 
 ### Шаг 1. Окружение
 
-`pip install qiskit qiskit-aer matplotlib` (у Qiskit нет extra `qiskit[aer]` — Aer давно выделился в отдельный пакет `qiskit-aer`), Qiskit >= 1.0. Зафиксируйте версии (requirements.txt).
+`pip install qiskit qiskit-aer matplotlib` (у Qiskit нет extra `qiskit[aer]` — Aer давно выделился в отдельный пакет `qiskit-aer`). Материал проверен на Qiskit 2.6.0 / Python 3.11; других версий не обещаем — зафиксируйте свои (requirements.txt).
 
 ### Шаг 2. Набор схем
 
-Четыре репрезентативных семейства разной «структуры»:
+Четыре репрезентативных семейства разной «структуры». Используйте функции/классы,
+которые не помечены deprecated в Qiskit 2.6 (`QFT`, `QAOAAnsatz`, `GroverOperator`,
+`DraperQFTAdder` — legacy-классы, см. примечания ниже):
 
 ```python
-from qiskit.circuit.library import DraperQFTAdder, QFT
-from qiskit.circuit.library import GroverOperator, QAOAAnsatz
+from qiskit import QuantumCircuit
+from qiskit.circuit.library import ModularAdderGate, quantum_volume, qaoa_ansatz
+from qiskit.quantum_info import SparsePauliOp
+from qiskit.synthesis.qft import synth_qft_full
+
+def adder(n=4):
+    g = ModularAdderGate(n)                 # не-deprecated замена DraperQFTAdder/QFTAdder
+    qc = QuantumCircuit(g.num_qubits)
+    qc.append(g, range(g.num_qubits))
+    return qc
+
+qft  = synth_qft_full(5, do_swaps=False)   # QFT без финальных SWAP (см. ниже)
+grover = ...                               # см. пункт «Grover» ниже
+# MaxCut на кольце из 6 вершин, cost = Σ (1 - Z_i Z_j)/2:
+ring_op = SparsePauliOp.from_sparse_list(
+    [("ZZ", [i, (i + 1) % 6], -0.5) for i in range(6)], num_qubits=6)
+ring_op += SparsePauliOp.from_list([("IIIIII", 3.0)])
+qaoa = qaoa_ansatz(ring_op, reps=2)         # не-deprecated замена QAOAAnsatz
 ```
 
-- **Adder**: `DraperQFTAdder(4)` («add») — плотный 2q-конфликт.
-- **QFT**: `QFT(5, do_swaps=False)` — каскадные CX.
+- **Adder**: `ModularAdderGate(4)` — плотный 2q-конфликт. (`DraperQFTAdder` в Qiskit 2.6
+  тоже работает, но выдаёт `DeprecationWarning` через базовый `Adder`; при `-W error::DeprecationWarning`
+  скрипт упадёт — поэтому не-deprecated вариант предпочтителен.)
+- **QFT**: `synth_qft_full(5, do_swaps=False)` — каскадные CX, без финальных SWAP.
+  Не путайте с `QFTGate(5)`: gate-версия соответствует QFT **с** финальными
+  SWAP-перестановками (проверено: `Operator(synth_qft_full(3, do_swaps=False))` **не**
+  equiv `Operator(QFTGate(3))`). Отдельной опции «без swaps» у `QFTGate` нет, поэтому
+  для «чистого» каскада используйте `synth_qft_full(..., do_swaps=False)`.
 - **Grover**: оракул на 3 кубитах + 2 итерации (соберите сами: diffuser = H, X, MCX, X, H).
-- **QAOA**: MaxCut на кольце из 6 вершин: `QAOAAnsatz(cost_operator, reps=2)`.
+  Класс `GroverOperator` — deprecated; ручная сборка проще и понятнее для бенчмарка.
+- **QAOA**: `qaoa_ansatz(cost_operator, reps=2)` для MaxCut на кольце из 6 вершин.
+
+> `random_circuit` **существует** в `qiskit.circuit.random` (в 2.6 — `random_circuit(n, depth, ...)`);
+> если нужен дополнительный «плотный» класс схем, это легальный не-deprecated путь.
 
 ### Шаг 3. Две топологии
 
 ```python
 from qiskit.transpiler import CouplingMap
 line  = CouplingMap.from_line(16)
-ring  = CouplingMap.from_ring(16)   # или heavy-hex-подобный подграф FakeSherbrooke()
+ring  = CouplingMap.from_ring(16)   # или heavy-hex-подграф из FakeSherbrooke()
 ```
 
-Альтернатива: `FakeSherbrooke()` (heavy-hex) как «реалистичная» вторая топология.
+Альтернатива: `FakeSherbrooke()` (heavy-hex, 127 кубитов) как «реалистичная» вторая
+топология. Если нужен ограниченный подграф, выберите связное подмножество из
+`backend.coupling_map.get_edges()` — например, для FakeSherbrooke рёбра с обоими
+концами `< 16` дают связный 16-кубитный heavy-hex-подграф (15 рёбер; степени 1–2).
+Не предполагайте заранее, что какое-то подмножество связно: проверяйте
+`CouplingMap(edges).is_connected()`.
 
 ### Шаг 4. Бенчмарк-цикл
 
 ```python
-from qiskit.transpiler.preset_passmanagers import generate_preset_pass_manager
+from qiskit.transpiler import generate_preset_pass_manager
 
 def run_level(qc, level, cmap, seed=42):
     pm = generate_preset_pass_manager(
         optimization_level=level, coupling_map=cmap,
         basis_gates=["rz", "sx", "x", "cz"], seed_transpiler=seed)
-    out = pm.run(qc)
-    return out
+    return pm.run(qc)
 ```
 
-Для каждой комбинации (схема × топология × level 0..3 × seed в {42, 43, 44}) — минимум 3 прогона, чтобы отсечь нестабильность Sabre.
+**Два режима.** Начните с быстрого: 5 фиксированных seeds (например, `42, 43, 44,
+45, 46`) — это позволяет увидеть разброс, но **5 наблюдений не дают устойчивой
+статистики**: один seed может доминировать. Research-режим — 20–30 seeds
+(те же 42… плюс ещё); только на нём имеет смысл обсуждать распределение.
+Никогда не сравнивайте разные комбинации «схема × топология × level» на разных
+наборах seeds — **seed-пары должны совпадать** (один и тот же seed на все уровни
+одной (схема, топология)).
+
+**Время компиляции** — обязательная метрика, иначе вопрос «стоит ли платить временем
+за level 2–3?» не отвечен. Измеряйте `time.perf_counter()` вокруг `pm.run(qc)` и
+контролируйте конфаундеры:
+
+```python
+import time, os
+os.environ.setdefault("OMP_NUM_THREADS", "1")   # до импорта qiskit/при запуске
+os.environ.setdefault("OPENBLAS_NUM_THREADS", "1")
+
+def timed_run(pm, qc, warmup=True):
+    if warmup:                                  # прогрев JIT/кэшей — не учитываем
+        pm.run(qc)
+    t0 = time.perf_counter()
+    out = pm.run(qc)
+    return out, time.perf_counter() - t0
+```
+
+Фиксируйте CPU/threads в README, гоняйте уровни вперемешку (или одно и то же число
+повторов на уровень), репортите медиану повторов, а не один замер. Время компиляции
+на порядки зависит от машины — сравнивайте относительные величины внутри своего запуска.
 
 ### Шаг 5. Метрики
 
@@ -81,85 +140,142 @@ def metrics(qc):
     return {
         "depth": qc.depth(),
         "size": qc.size(),
-        # все нелокальные (двухкубитные и более) гейты: cx, cz, ecr, swap, ...
-        "2q": qc.num_nonlocal_gates(),
+        # ровно двухкубитные инструкции (операндов ровно 2)
+        "2q": sum(len(inst.qubits) == 2 for inst in qc.data),
+        # все нелокальные (2 и более кубитов): включает ccx и пр.
+        "nonlocal": qc.num_nonlocal_gates(),
         "swap": ops.get("swap", 0),
-        "1q": ops.get("rz", 0) + ops.get("sx", 0) + ops.get("x", 0),
+        "1q": sum(len(inst.qubits) == 1 for inst in qc.data),
     }
 ```
 
-Считать «2q» по длине имени гейта нельзя: фильтр `len(k) == 2` ловит `cx`/`cz`,
-но пропускает `swap` (4 символа) и `ecr` (3 символа) — метрика занижает число
-двухкубитных операций. Используйте `qc.num_nonlocal_gates()`: он считает все
-гейты, действующие более чем на одном кубите (включая SWAP), независимо от имени.
+Почему две разные метрики:
 
-Оценку времени — через `durations` в Target (если используете фейк-бэкенд:
-`target.durations().get(gate, (q0, q1))` даёт длительность гейта на конкретной паре
-кубитов в единицах бэкенда, а `target[gate][(q0, q1)].duration` — то же в секундах).
+- `sum(len(inst.qubits) == 2 for inst in qc.data)` — **точное** число инструкций
+  ровно с двумя операндами (cx, cz, ecr, swap, rzz…). Это и есть привычный «2q-счёт».
+- `qc.num_nonlocal_gates()` — считает **все** гейты с ≥ 2 кубитами (включая `ccx`,
+  `mcmt`). На нативных базисах `cz`/`ecr` они совпадают, но на высокоуровневой схеме
+  (до transpile) — нет: у `ModularAdderGate` после разложения есть `ccx`, и
+  `num_nonlocal` будет больше «ровно-2q». Подписывайте колонки как `2q` и `nonlocal`.
 
-Два уточнения, чтобы метрики не врали:
+Не считайте 2q по длине имени гейта: `len(name) == 2` ловит `cx`/`cz`, но пропускает
+`ecr`/`swap`/`rzz`; `num_nonlocal_gates()` (включая SWAP) — правильный счёт для
+«нелокальных», `len(inst.qubits) == 2` — для «ровно двухкубитных».
 
-1. **«Чистый» вклад роутера — SWAP до basis translation.** В финальной схеме
-   SWAP-гейты могли быть удалены оптимизацией или растворены в 3 CX: сравнивать QFT(5)
-   по финальному `count_ops("swap")` не полностью честно. Захватывайте схему
-   **сразу после routing-стейджа**, поставив callback в пресет-менеджер:
+**Длительность (если используете фейк-бэкенд).** Длительности гейтов живут в
+`backend.instruction_durations`, а `Target[...][(q0,q1)].duration` уже в **секундах**
+(у FakeSherbrooke `target.dt` хранится, но `InstructionProperties.duration` — в секундах):
 
 ```python
-snapshot_after_routing = {}
+d = backend.instruction_durations                   # InstructionDurations
+d.get("x", (0,), unit="dt")                         # → тики dt (таков и default)
+d.get("x", (0,), unit="s")                          # → секунды явно
+target = backend.target
+target["x"][(0,)].duration                          # → секунды (float)
+```
 
-def capture_after_routing(pass_, dag, time, property_set, count):
-    cls = type(pass_).__name__
-    if cls in ("SabreSwap", "StochasticSwap", "BasicSwap"):
-        snapshot_after_routing[len(snapshot_after_routing)] = dag.count_ops()
+`.duration` у `InstructionProperties` **не** умножайте на `dt` — получите 0/мусор.
+`InstructionDurations.get()` по умолчанию возвращает значение в **dt** (целые тики);
+чтобы получить секунды, передавайте `unit="s"`. Всегда проверяйте на одном гейте,
+в каких единицах пришло число, прежде чем суммировать.
+
+Три уточнения, чтобы метрики не врали:
+
+1. **«Чистый» вклад роутера — SWAP до basis translation.** Пресетный менеджер
+   принимает `callback` **не** в `generate_preset_pass_manager(...)` (такой аргумент
+   даёт `TypeError`), а в `pm.run(qc, callback=...)`. Callback вызывается после
+   каждого pass'а:
+
+```python
+snapshots = []
+
+def capture(pass_, dag, time, property_set, count):
+    ops = dag.count_ops()
+    snapshots.append((count, type(pass_).__name__, ops.get("swap", 0), ops.get("cz", 0)))
 
 pm = generate_preset_pass_manager(
     optimization_level=level, coupling_map=cmap,
-    basis_gates=["rz", "sx", "x", "cz"], seed_transpiler=seed,
-    callback=capture_after_routing,
-)
+    basis_gates=["rz", "sx", "x", "cz"], seed_transpiler=seed)
+out = pm.run(qc, callback=capture)
 ```
 
-   Если callback не использован, помечайте в таблице, что SWAP-счёт
-   «финальный, после оптимизации между routing и basis» — и это отдельная
-   колонка, а не та же самая.
+   **Ограничения этого снапшота — не выдавайте его за точный routing-срез.**
+   Callback не гарантирует «один вызов на стадию»: `SabreLayout` может сам выполнять
+   routing внутри layout-стадии, а `BasisTranslator` потом «размазывает» SWAP в
+   `cz`-последовательности не в том порядке, в каком их вставил роутер. Практический
+   честный вариант — колонка `swap_final` (после оптимизации) и отдельный журнал
+   `(pass, swap, cz)` из callback. Первый снапшот с `cz`/`ecr` — это **не** граница
+   routing: он может появиться после translation или уже присутствовать на входе.
+   Для точного среза нужно явно инструментировать границы собственных стадий.
+   В README опишите, где именно снята каждая метрика.
+   Для QFT-подобных схем без встроенных SWAP (`do_swaps=False`) финальный
+   `count_ops("swap")` уже информативен («есть/нет»), но не равен числу SWAP,
+   вставленных роутером, если оптимизация их удалила.
 
 2. **Сумма длительностей гейтов ≠ makespan.** Σ duration — это «работа»
-   (work): сколько суммарного времени проводит железо, исполняя гейты по
-   очереди. Реальное время исполнения схемы (makespan) определяется
-   расписанием: независимые гейты идут параллельно, а не последовательно,
-   поэтому makespan меньше суммы, обычно около «глубины слоёв × длительность
-   слоя». Для честной оценки используйте scheduling:
-   `transpile(..., scheduling_method="asap")` и `circuit.op_start_times`,
-   либо аппроксимацию «makespan ≈ Σ по слоям max(duration в слое)» — сумму же
-   длительностей никогда не выдавайте за real-time исполнения.
+   (work). Makespan определяется расписанием: независимые гейты идут параллельно.
+   Для честной оценки используйте scheduling (`scheduling_method="asap"` в
+   `generate_preset_pass_manager`) и `circuit.op_start_times`, либо аппроксимацию
+   «≈ Σ по слоям max(duration в слое)» — сумму длительностей никогда не выдавайте
+   за real-time исполнения.
+
+3. **Топология и SWAP.** Не пишите «кольцо удваивает SWAP против линии» как
+   аксиому: у линии на 16 вершинах 15 неориентированных рёбер, у кольца — 16;
+   дополнительное ребро может помочь, но итог зависит
+   от схемы, стартового layout и seed. Формулируйте как гипотезу и проверяйте
+   числами; для line vs ring разница может быть в единицах SWAP, а не в 2×.
 
 ### Шаг 6. Изобразительное представление
 
-DataFrame (pandas) → `df.to_markdown()`. Один файл графиков: bar charts depth/2q по уровням для каждой схемы на двух топологиях; сохраняйте в `figures/`.
+DataFrame (pandas) → `df.to_markdown()`. Графики: bar charts depth/2q по уровням для
+каждой схемы на двух топологиях; для нескольких seeds — медиана и IQR (error bars),
+не «среднее по 5». Сохраняйте в `figures/`.
 
 ### Шаг 7. Выводы
 
-Сформулируйте 4–6 содержательных утверждений, например: насколько level 3 лучше level 0 (в %) — зависит ли победа level 2/3 от количества 2q-конфликтов; как кольцевая топология удваивает число SWAP против линии; где транспилятор «перестарался».
+Сформулируйте 4–6 содержательных утверждений по **своим** данным: зависит ли
+победа level 2/3 от количества 2q-конфликтов; сколько `2q`/depth сэкономил каждый
+уровень (медиана, IQR, min–max); сколько времени компиляции это стоило; где
+транспилятор «перестарался». Не пишите заранее, какой уровень «должен» победить:
+объясняйте только то, что видно в таблице.
 
 **Таблица, которую вы должны суметь интерпретировать (пример структуры итоговой матрицы):**
 
-| Схема | Топология | Level | depth | 2q | SWAP | примечание |
-|---|---|---|---|---|---|---|
-| QFT(5) | line | 0 | … | … | … | baseline |
-| QFT(5) | line | 3 | … | … | … | сколько % экономии |
-| QAOA-6 | ring | 0 | … | … | … | кольцо бьёт? |
-| Adder | heavy-hex | 3 | … | … | … | … |
+| Схема | Топология | Level | depth (med) | 2q (med) | SWAP | compile_t, ms (med) | примечание |
+|---|---|---|---|---|---|---|---|
+| QFT(5) | line | 0 | … | … | … | … | baseline |
+| QFT(5) | line | 3 | … | … | … | … | сколько % экономии |
+| QAOA-6 | ring | 0 | … | … | … | … | |
+| Adder | heavy-hex | 3 | … | … | … | … | |
 
-Ожидаемые качественные тренды (проверьте, что они воспроизводятся на ваших данных): (1) level 0 почти всегда проигрывает по depth на «шумных» схемах; (2) QFT/аддер — самые SWAP-зависимые схемы; (3) выгода level 3 заметнее на больших n и «плохих» топологиях.
+Ожидаемые тренды формулируйте как **гипотезы для проверки**, а не как результат:
+(1) на уровне 0 depth обычно выше, но не всегда (иногда level 0 уже «дешёвый» на
+схемах с малым числом 2q); (2) QFT/аддер чувствительны к топологии и layout;
+(3) выгода level 2/3 обычно заметнее на больших n и «плохих» топологиях — но
+проверьте это на своих 5 (или 20–30) seeds и покажите разброс.
+
+**Статистика.** Для каждого (схема, топология, level) репортите median, IQR
+(Q1–Q3), min–max. На 5 seeds **не** обещайте статистическую значимость — 5 seeds
+показывают разброс, но не распределение. Для research-режима (20–30 seeds)
+допустим bootstrap-CI медианы (ресемплинг seed-значений с заменой) — но и его
+интерпретируйте как оценку неопределённости *для этих seeds*, а не как «доказательство».
+
+**Бонус: стандартный корпус.** MQT Bench — сторонний benchmark-набор схем
+(target-independent, native, mapped). Подключение опционально; конкретный API
+проверяйте по актуальной документации MQT Bench перед использованием (в этом
+курсе точные сигнатуры не проверялись). Сравнивать свой «педагогический» набор
+с внешним корпусом полезно, но не обязательно для сдачи.
 
 ## Критерии приёмки
 
-- [ ] Охват: 4 схемы × 2 топологии × 4 уровня × >=3 seeds — таблица минимум 96 строк (или агрегированная).
-- [ ] Метрики depth, 2q, SWAP посчитаны корректно: 2q = `num_nonlocal_gates()` (уже включает SWAP), а «чистый» вклад роутера считается как SWAP из `count_ops` минус неявные SWAP QFT-типа схемы, если применимо.
-- [ ] Все прогоны воспроизводимы (seed_transpiler зафиксирован; есть вывод версий библиотек).
-- [ ] Два графика сохранить в `figures/` (метрики по уровням).
-- [ ] В README решения — 4–6 выводов с числами в процентах и объяснением «почему».
-- [ ] (bonus) Время компиляции каждого уровня зафиксировано.
+- [ ] Охват (быстрый режим): 4 схемы × 2 топологии × 4 уровня × **5 фиксированных seeds** = **160 прогонов** (сырая таблица 160 строк); агрегированная — по (схема, топология, level) с median/IQR/min–max.
+- [ ] Research-режим (опционально): те же комбинации на 20–30 seeds; результаты — отдельной таблицей, не смешаны с быстрым режимом.
+- [ ] Метрики посчитаны корректно и разделены: `2q = sum(len(inst.qubits) == 2 for inst in qc.data)`, `nonlocal = num_nonlocal_gates()`, `swap = count_ops("swap")`. Колонки подписаны явно.
+- [ ] Время компиляции измерено `time.perf_counter()` с прогревом, одинаковыми threads и **одинаковыми seed-парами** для всех уровней; конфаундеры описаны в README.
+- [ ] Все прогоны воспроизводимы (seed_transpiler зафиксирован; есть вывод версий библиотек и ОС/CPU).
+- [ ] Два графика сохранить в `figures/` (метрики по уровням, с IQR/разбросом).
+- [ ] В README решения — 4–6 выводов с числами (медианы и разброс), объяснением «почему» и явным перечнем ограничений (5 seeds, одна машина, один набор схем).
+- [ ] Код исполняется с `python -W error::DeprecationWarning` (или в README указано, какие предупреждения допустимы и почему).
 
 ## Расширения
 

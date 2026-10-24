@@ -26,10 +26,64 @@ jobs:
           python -m pip install mkdocs-material pymdown-extensions
 
       - name: Unit tests of the interactive core
-        run: node tools/js/qc-core.test.js
+        run: |
+          node tools/js/qc-core.test.js
+          node tools/js/qc-playground.test.js
+
+      - name: Markdown example discovery and failure-path tests (no SDK needed)
+        run: python -X utf8 tools/test_example_blocks.py
 
       - name: Build the site (warnings are errors)
         run: python tools/build_site.py --strict
 
       - name: Check internal links and markdown blocks
         run: python tools/check_docs.py
+
+  course-stable:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      QISKIT_NUM_PROCS: "1"
+      RAYON_NUM_THREADS: "1"
+      OMP_NUM_THREADS: "1"
+      OPENBLAS_NUM_THREADS: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: requirements-lock.txt
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install the tested snapshot
+        run: python -m pip install -r requirements-lock.txt
+      - name: Numerical contracts and marked Markdown examples
+        run: python -X utf8 tools/check_examples.py
+      - name: JavaScript conventions cross-checked against Qiskit
+        run: |
+          node tools/js/qc-core.test.js
+          node tools/js/qc-playground.test.js
+
+  course-latest:
+    # Advisory compatibility check, not a substitute for the pinned stable job.
+    continue-on-error: true
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      QISKIT_NUM_PROCS: "1"
+      RAYON_NUM_THREADS: "1"
+      OMP_NUM_THREADS: "1"
+      OPENBLAS_NUM_THREADS: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: requirements.txt
+      - name: Install newest allowed versions
+        run: python -m pip install --upgrade -r requirements.txt
+      - name: Check forward compatibility (advisory)
+        run: python -X utf8 tools/check_examples.py

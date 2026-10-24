@@ -171,6 +171,7 @@ $\mathrm{SWAP}_{ab} = \mathrm{CNOT}_{ab} \cdot \mathrm{CNOT}_{ba} \cdot \mathrm{
 <summary>Ответ</summary>
 
 CNOT только копирует корреляцию: на базисном состоянии $|00\rangle$ результат остаётся факторизуемым. Если контроль в суперпозиции, то $\frac{|0\rangle+|1\rangle}{\sqrt2} \otimes |0\rangle \to \frac{|00\rangle+|11\rangle}{\sqrt2}$ — а это состояние не факторизуется (алгебраически доказано через противоречие $ad = 0$ при $ac, bd \neq 0$).
+Тензорная запись: в этой формуле контроль — **абстрактный кубит A (слева), цель — B (справа)**, а не индексы Qiskit. В `qc.cx(0, 1)` у Qiskit контроль — `q0`, цель — `q1`, и little-endian-запись кета читается наоборот: $|q_1 q_0\rangle$. Поэтому при переносе формул в код сверяйте, какое соглашение об A/B вы используете (см. [CONVENTIONS.md](../CONVENTIONS.md)).
 Источник: [02-gates-circuits.md](../curriculum/01-quantum-basics/02-gates-circuits.md)
 </details>
 
@@ -217,25 +218,25 @@ CNOT только копирует корреляцию: на базисном �
 <details markdown="1">
 <summary>Ответ</summary>
 
-Фиксированный набор нативных гейтов (типично `{rz, sx, x, ecr}`), карта связности coupling map (2q-гейты только между соседями) и конкретные частоты ошибок по каждому гейту и кубиту.
+Фиксированный набор нативных гейтов (типично `{rz, sx, x, ecr или cz}`), карта связности coupling map (2q-гейты только между соседями) и конкретные частоты ошибок по каждому гейту и кубиту.
 Источник: [03-transpilation-hardware.md](../curriculum/02-programming/03-transpilation-hardware.md)
 </details>
 
 ### 02.03 — Что решает transpile
-**Q:** Какие четыре подзадачи решает транспилятор?
+**Q:** Какие четыре подзадачи решает транспилятор, и почему это не то же самое, что шесть стадий конвейера Qiskit?
 <details markdown="1">
 <summary>Ответ</summary>
 
-Layout — биекция логических кубитов на физические; routing — вставка SWAP, чтобы 2q-гейты попали на рёбра; translation — перепись гейтов в basis gates устройства; scheduling — расписание по времени. Ответ читается как карта этапов конвейера Qiskit.
+Подзадачи по смыслу: layout — биекция логических кубитов на физические; routing — вставка SWAP, чтобы 2q-гейты попали на рёбра; translation — перепись гейтов в basis gates устройства; scheduling — расписание по времени. Но preset-конвейер состоит из **шести** стадий: `init → layout → routing → translation → optimization → scheduling`. Лишние две — `init` (подготовка до размещения) и `optimization` (постоянная сцена вычистки): «четыре» отвечает на вопрос «какие решения принимаются», «шесть» — «какие сцены исполняются».
 Источник: [02-transpiler-internals.md](../curriculum/04-systems-design/02-transpiler-internals.md)
 </details>
 
 ### 02.04 — Уровни оптимизации
-**Q:** Каков качественный смысл `optimization_level` 0, 1, 2, 3 в Qiskit?
+**Q:** Каков качественный смысл `optimization_level` 0, 1, 2, 3 в Qiskit (без заучивания списков пассов)? [Qiskit 2.6 / Runtime 0.50]
 <details markdown="1">
 <summary>Ответ</summary>
 
-0 — «исполнимо»: тривиальный layout (`TrivialLayout`), перевод в базис, SWAP-вставки, содержательных оптимизаций нет; 1 — лёгкая оптимизация: `Optimize1qGatesDecomposition` (сжатие цепочек 1q-гейтов) и `InverseCancellation` (отмена взаимно обратных гейтов), плюс подбор раскладки (`VF2Layout`) и `VF2PostLayout`; 2 — средняя: `TrivialLayout` больше не используется, вместо `InverseCancellation` приходит `CommutativeCancellation` (отмены через коммутативные границы), перебор layout/routing глубже; 3 — тяжёлая: ресинтез 2q-блоков (`Collect2qBlocks` → `ConsolidateBlocks` → `UnitarySynthesis`), unitarity-breaking пассы (`OptimizeSwapBeforeMeasure`, `RemoveDiagonalGatesBeforeMeasure`), `VF2PostLayout` с расширенными лимитами перебора и самый агрессивный перебор layout/routing.
+0 — «исполнимо»: тривиальная раскладка, перевод в базис, SWAP-вставки, содержательных оптимизаций нет; 1 — лёгкое сжатие: пробуем раскладку без вставок, иначе эвристическую, вычищаем очевидные избыточности; 2 — более глубокий перебор layout/routing и отмены через коммутацию; 3 — тяжёлая оптимизация: как 2, плюс пересборка пар 2q-гейтов и noise-aware пост-раскладка (`VF2PostLayout` — в 2.6 только на этом уровне) в обмен на время компиляции. Минимальная глубина не гарантируется ни одним уровнем. Сами имена и ростеры пассов — версионная деталь: единственный надёжный источник — дамп `generate_preset_pass_manager` и [урок 04](../curriculum/04-systems-design/02-transpiler-internals.md), а не списки из старых учебников.
 Источник: [02-transpiler-internals.md](../curriculum/04-systems-design/02-transpiler-internals.md)
 </details>
 
@@ -244,16 +245,16 @@ Layout — биекция логических кубитов на физиче�
 <details markdown="1">
 <summary>Ответ</summary>
 
-SABRE — стохастическая эвристика: разные seed'ы дают разброс результата, на больших схемах до десятков процентов по числу SWAP. Без фиксации seed сравнение уровней и роутеров не воспроизводимо и нечестно.
+SABRE — стохастическая эвристика: разные seed'ы дают разброс результата (величина зависит от схемы, топологии и эвристики — от нуля до десятков процентов по числу SWAP). Без фиксации seed сравнение уровней и маршрутизаторов не воспроизводимо и нечестно.
 Источник: [03-routing-mapping-sabre.md](../curriculum/04-systems-design/03-routing-mapping-sabre.md)
 </details>
 
 ### 02.06 — Где смотреть свойства бэкенда
-**Q:** Где в современном BackendV2 лежат ошибка 2q-гейта, readout-ошибка и T1/T2, и что удобно использовать до доступа к живому QPU?
+**Q:** Где в современном BackendV2 лежат ошибка 2q-гейта, readout-ошибка и T1/T2, и что удобно использовать до доступа к живому QPU? [Qiskit 2.6 / Runtime 0.50]
 <details markdown="1">
 <summary>Ответ</summary>
 
-`target["ecr"/"cx"][(a, b)].error` — ошибка и длительность 2q-гейта; `target["measure"][(q,)].error` — readout; `target.qubit_properties[q].t1/.t2` — когерентность. До реального железа — fake-бэкенды, например `FakeSherbrooke` (127 кубитов, heavy-hex), с полным Target.
+`target["ecr"/"cz"][(a, b)].error` — ошибка и длительность 2q-гейта (имя нативного гейта зависит от поколения: `ecr` у Eagle, `cz` у Heron); `target["measure"][(q,)].error` — readout; `target.qubit_properties[q].t1/.t2` — когерентность. До реального железа — fake-бэкенды, например `FakeSherbrooke` (127 кубитов, heavy-hex), с полным Target.
 Источник: [03-transpilation-hardware.md](../curriculum/02-programming/03-transpilation-hardware.md)
 </details>
 
@@ -287,11 +288,11 @@ SABRE — стохастическая эвристика: разные seed'ы 
 </details>
 
 ### 03.03 — Характер ускорения
-**Q:** Какое ускорение даёт Гровер — экспоненциальное или квадратичное, и у какого алгоритма ускорение экспоненциальное?
+**Q:** Чем различаются выигрыши Гровера и Шора, и какое сравнение с классикой доказано?
 <details markdown="1">
 <summary>Ответ</summary>
 
-Гровер — квадратичное: $O(N)$ обращений к оракулу против $O(\sqrt N)$. Экспоненциальное ускорение — у Шора (факторизация, дискретный логарифм). Смешивать эти категории — частая ошибка пересказа.
+Гровер: доказанный квадратичный выигрыш по запросам — классически $\Theta(N)$, квантово $\Theta(\sqrt N)$. Шор полиномиален по длине входа $\log N$, в отличие от лучших известных классических алгоритмов факторизации; но классическая нижняя граница, исключающая полиномиальный алгоритм, не доказана. Это не тот же тип гарантии, что oracle-граница Гровера.
 Источник: [01-grover.md](../curriculum/03-algorithms/01-grover.md)
 </details>
 
@@ -309,16 +310,16 @@ SABRE — стохастическая эвристика: разные seed'ы 
 <details markdown="1">
 <summary>Ответ</summary>
 
-После квантового возведения $\frac{1}{\sqrt{2^n}}\sum_x |x\rangle|a^x \bmod N\rangle$ QFT превращает фазы регистра в измеримые почти-кратные периода $r$. Глубина $O(n^2)$ — из контролируемых фазовых вращений, что критично для реального железа.
+При размере фазового регистра $Q=2^m$ обратный QFT даёт пики около $c=sQ/r$, а не кратных самому $r$. Стандартная точная схема QFT содержит $\Theta(m^2)$ управляемых фаз, но при all-to-all-связности её глубина $\Theta(m)$; ограниченная топология и компиляция меняют аппаратную глубину.
 Источник: [02-qft-shor.md](../curriculum/03-algorithms/02-qft-shor.md)
 </details>
 
 ### 03.06 — Классическая часть Шора
-**Q:** Как из почти-кратного периода $r$, полученного при измерении после QFT, извлекаются множители $N = pq$?
+**Q:** Как из измерения $c\approx sQ/r$ после обратного QFT извлекаются множители $N = pq$?
 <details markdown="1">
 <summary>Ответ</summary>
 
-Классически: continued fractions восстанавливает $r$ по почти-кратному, затем $\gcd(a^{r/2} \pm 1, N)$ даёт делитель; на старте проверяется $\gcd(a, N)$ (иногда фактор находится сразу).
+Цепные дроби для $c/Q$ дают кандидата в знаменатель $r$ (или его делитель). Проверяют порядок $a^r\equiv1\pmod N$; при чётном $r$ и $a^{r/2}\not\equiv-1\pmod N$ вычисляют $\gcd(a^{r/2}\pm1,N)$. Неудача требует новых измерений или нового $a$; на старте $\gcd(a,N)>1$ может сразу дать множитель.
 Источник: [02-qft-shor.md](../curriculum/03-algorithms/02-qft-shor.md)
 </details>
 
@@ -419,7 +420,7 @@ Routing-проблема практически исчезает: любой CX 
 <details markdown="1">
 <summary>Ответ</summary>
 
-init → layout → routing → translation → optimization → scheduling. Типовые представители: `HighLevelSynthesis`, `SabreLayout`, `SabreSwap`, `BasisTranslator`, `Optimize1qGatesDecomposition`/`ConsolidateBlocks`, `ALAPScheduleAnalysis`/`PadDelay`.
+init → layout → routing → translation → optimization → scheduling. Сцена отвечает за: подготовку схемы, выбор физических кубитов, вставку SWAP, перевод в нативный базис, сжатие схемы и укладку по времени. Имена конкретных пассов внутри сцен версионны — их не заучивают, а получают дампом пресета (см. урок 04). Не путать с «четырьмя подзадачами» layout/routing/translation/scheduling: их четыре, а сцен шесть.
 Источник: [02-transpiler-internals.md](../curriculum/04-systems-design/02-transpiler-internals.md)
 </details>
 
@@ -428,7 +429,7 @@ init → layout → routing → translation → optimization → scheduling. Т�
 <details markdown="1">
 <summary>Ответ</summary>
 
-Bidirectional search: цена кандидата-SWAP суммирует forward-оценку текущего слоя и backward-оценку по обратному проходу схемы. Decay: кубиты, задействованные в недавних SWAP, дорожают — так балансируются depth и число гейтов. SabreLayout — комбинированный layout+routing: он «внутри себя» запускает routing и получает интегрально лучший результат, а не решает задачи по очереди.
+Score кандидата-SWAP — forward-оценка: cost(front layer после SWAP) + взвешенный cost(extended set, «подглядывание вперёд») × decay. Decay штрафует кубиты, часто участвующие в недавних SWAP. «Bidirectional» относится **не** к score, а к уточнению начального layout: прямой проход маршрутизации плюс проход по развёрнутой схеме, и несколько рестартов. SabreLayout — комбинированный layout+routing: внутри себя запускает routing и получает интегрально лучший результат, а не решает задачи по очереди.
 Источник: [03-routing-mapping-sabre.md](../curriculum/04-systems-design/03-routing-mapping-sabre.md)
 </details>
 
@@ -437,7 +438,7 @@ Bidirectional search: цена кандидата-SWAP суммирует forwar
 <details markdown="1">
 <summary>Ответ</summary>
 
-После optimization-этапа по таблице ошибок бэкенда проверяет, нельзя ли пересадить готовую схему на менее шумные физические кубиты, — пост-layout улучшение. Это часть встроенного noise-adaptive mapping уровней 1–3 (на уровне 1 — только если тривиальная раскладка оказалась неидеальной).
+Пост-layout пасс: по таблице ошибок бэкенда проверяет, нельзя ли пересадить готовую схему на менее шумные физические кубиты. Где стоит — версия-зависимо [Qiskit 2.6]: только на уровне 3, **в конце optimization-сцены** (в 1.x он завершал routing-сцену уровней 1–2). Проверяйте дампом preset-менеджера, а не по памяти.
 Источник: [02-transpiler-internals.md](../curriculum/04-systems-design/02-transpiler-internals.md)
 </details>
 

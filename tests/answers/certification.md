@@ -1,13 +1,13 @@
 ---
-title: "Ответы: сертификационный тест"
-module: "Сертификация"
+title: "Ответы: Qiskit API readiness — промежуточная проверка"
+module: "Промежуточная проверка"
 difficulty: "intermediate"
 duration: "~4 мин"
 status: "draft"
-tags: [answers, certification, qiskit, api]
+tags: [answers, qiskit, api, intermediate-check]
 ---
 
-# Ответы: сертификационный тест
+# Ответы: Qiskit API readiness — промежуточная проверка
 
 Ключ к [tests/certification-quiz.md](../certification-quiz.md).
 
@@ -24,7 +24,7 @@ _Урок: [../../curriculum/02-programming/README.md](../../curriculum/02-progr
 _Урок: [../../curriculum/02-programming/README.md](../../curriculum/02-programming/README.md)._
 
 ## Вопрос 4
-**Ответ: D.** Допустимые значения пресетов: 0, 1, 2, 3. Начиная с 1 подключаются VF2Layout (точное вложение) и VF2PostLayout; на 2 — CommutativeCancellation и агрессивнее layout/routing; на 3 — пересборка пар 2q-гейтов (`TwoQubitPeepholeOptimization`) и синтез унитарных блоков (`UnitarySynthesis`).
+**Ответ: D.** Допустимые значения стандартного пресета — 0, 1, 2, 3: от минимального до более дорогого поиска оптимизаций. Номер не гарантирует ни минимальную глубину, ни лучшее качество; сравнивайте метрики вместе со временем компиляции. Имена и размещение пассов зависят от версии и плагинов — источник подробностей: [каноническое описание транспилятора](../../curriculum/04-systems-design/02-transpiler-internals.md).
 _Урок: [../../curriculum/04-systems-design/02-transpiler-internals.md](../../curriculum/04-systems-design/02-transpiler-internals.md)._
 
 ## Вопрос 5
@@ -44,7 +44,7 @@ _Урок: [../../curriculum/02-programming/README.md](../../curriculum/02-progr
 _Урок: [../../curriculum/02-programming/README.md](../../curriculum/02-programming/README.md)._
 
 ## Вопрос 9
-**Ответ: B.** Порядок аргументов cx(control, target): q0 — управление, q1 — цель. От бэкенда не зависит.
+**Ответ: B.** В `cx(control, target)` первый аргумент — управление, второй — цель: у `cx(0, 1)` управляет `q0`, меняется `q1`. В базисе $|q_1 q_0\rangle$ обмениваются $|01\rangle$ (индекс 1) и $|11\rangle$ (индекс 3), а $|00\rangle$ и $|10\rangle$ неизменны. Это не зависит от бэкенда; матрица и соглашение — в [CONVENTIONS.md](../../CONVENTIONS.md).
 _Урок: [../../curriculum/01-quantum-basics/02-gates-circuits.md](../../curriculum/01-quantum-basics/02-gates-circuits.md)._
 
 ## Вопрос 10

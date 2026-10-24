@@ -41,25 +41,25 @@ tags: [quiz, transpiler, sabre, layout, noise-aware, co-design, qas]
 - D. Ближние слои двухкубитных гейтов «на дистанции» от текущего front-layer; их вклад взвешивается (фактор λ), чтобы не быть жадным к текущему слою и не злоупотреблять «выгодным» сейчас свопом
 
 ## Вопрос 5
-Каков правильный порядок стадий preset-конвейера transpile в Qiskit 1.x/2.x (до schedule)?
+Каков правильный порядок стадий preset-конвейера transpile в Qiskit 2.x?
 - A. layout → routing → init → translation → optimization
-- B. init → layout → routing → translation → optimization
+- B. init → layout → routing → translation → optimization (шестая стадия — scheduling)
 - C. translation → layout → routing → optimization → init
 - D. init → translation → optimization → layout → routing
 
 ## Вопрос 6
-Чем оптимизационный уровень 2 (optimization_level=2) отличается от уровня 1?
-- A. Level 2 не использует TrivialLayout, вместо InverseCancellation работает CommutativeCancellation, а перебор layout/routing идёт глубже; сжатие цепочек 1q-гейтов (Optimize1qGatesDecomposition) уже есть на level 1, а пересборка пар 2q-гейтов (`TwoQubitPeepholeOptimization`) и `UnitarySynthesis` появляются только на level 3
+Чем уровень 2 (`optimization_level=2`) отличается от уровня 1 по инженерному смыслу?
+- A. Level 2 не тратит попытку на тривиальную раскладку, ищет layout/routing упорнее и включает более сильные отмены через коммутацию — ценой времени компиляции; конкретный перечень пассов версионный и проверяется дампом пресета, а не заучивается
 - B. Level 2 работает только с коммутирующими пассами
 - C. Level 2 не трогает layout
 - D. Level 2 всегда быстрее
 
 ## Вопрос 7
-Что дополнительно делает level 3 по сравнению с level 2?
+Что дополнительно делает level 3 по сравнению с level 2 по инженерному смыслу?
 - A. Ничего: уровни 2 и 3 одно и то же
-- B. Отключает VF2PostLayout
+- B. Отключает noise-aware подбор физических кубитов
 - C. Работает только с факторизуемыми схемами
-- D. Добавляет пересборку пар двухкубитных гейтов (TwoQubitPeepholeOptimization), синтез произвольных унитарных блоков (UnitarySynthesis) и более агрессивные повторные прогоны (например, перебор layout-кандидатов по seed'ам)
+- D. Платит временем компиляции за самые дорогие оптимизации и noise-aware пост-раскладку (в Qiskit 2.6 `VF2PostLayout` стоит в конце optimization-сцены только на этом уровне); сам набор пассов версионный — сверяйте дампом пресета
 
 ## Вопрос 8
 Что делает пасс VF2Layout?

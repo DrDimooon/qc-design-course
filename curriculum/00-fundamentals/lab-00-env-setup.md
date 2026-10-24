@@ -26,7 +26,7 @@ tags: [qiskit, python, venv, lab, bell-state, simulator]
 python --version
 ```
 
-Нужна 3.11 или новее: актуальный Qiskit 2.x требует Python ≥ 3.10, а `qiskit-aer` (симулятор из шага 5) — ≥ 3.7, но вместе с Qiskit 2.x фактически нужно ≥ 3.10; рекомендуем 3.11–3.12. Если Python нет — установите с [python.org](https://www.python.org/downloads/) или через `winget install Python.Python.3.12`. При установке отметьте «Add python.exe to PATH».
+Для воспроизводимого пути используйте **Python 3.11**: локально проверена версия 3.11.9 на Windows x64. Более новые Python проверяются отдельно в CI, но поддержка каждой комбинации версий не гарантируется. Если Python нет — установите с [python.org](https://www.python.org/downloads/) или через `winget install Python.Python.3.11`. При установке отметьте «Add python.exe to PATH».
 
 ## Шаг 2. Изолированное окружение (venv)
 
@@ -43,10 +43,14 @@ python -m venv .venv
 
 ## Шаг 3. Установка Qiskit
 
+В клоне репозитория, из его корня, установите точный снимок:
+
 ```powershell
-pip install --upgrade pip
-pip install qiskit qiskit-aer qiskit-ibm-runtime jupyter
+python -m pip install --upgrade pip
+python -m pip install -r requirements-lock.txt
 ```
+
+Если работаете в отдельной папке `qc-lab`, укажите полный путь к `requirements-lock.txt` из клона курса. Для Jupyter дополнительно установите `python -m pip install jupyter` (он не входит в основной снимок).
 
 `qiskit-aer` — локальный симулятор, он нужен уже в шаге 5. `qiskit-ibm-runtime` нужен для будущей отправки схем на реальные устройства IBM Quantum (не требуется в этой лабе, но ставим сразу). Проверка установки:
 
@@ -74,7 +78,7 @@ print(qc.draw())
 python check.py
 ```
 
-Ожидаемый вывод — версия Qiskit (например, 1.2.x или 2.x) и ASCII-схема:
+Ожидаемый вывод — версия Qiskit 2.6.0 для lock-файла и ASCII-схема:
 
 ```
    ┌───┐
@@ -89,6 +93,7 @@ q: ┤ H ├
 Создайте `bell.py`:
 
 ```python
+# qc: executable
 from qiskit import QuantumCircuit
 from qiskit_aer import AerSimulator
 
@@ -97,15 +102,18 @@ qc.h(0)          # суперпозиция на qubit 0
 qc.cx(0, 1)      # CNOT: делает q0 и q1 запутанными
 qc.measure([0, 1], [0, 1])
 
-sim = AerSimulator()
+sim = AerSimulator(seed_simulator=7)
 result = sim.run(qc, shots=1000).result()
 counts = result.get_counts()
 print(counts)
+assert sum(counts.values()) == 1000
+assert set(counts) == {"00", "11"}
+assert abs(counts["00"] / 1000 - 0.5) < 0.1  # допуск на выборку, не ровно 500/500
 ```
 
 Симулятор `qiskit-aer` уже установлен в шаге 3 — если импорт `from qiskit_aer import AerSimulator` падает, поставьте его отдельно: `pip install qiskit-aer`.
 
-В корне репозитория есть единый проверенный набор зависимостей: [requirements.txt](../../requirements.txt) (снимок аудита 2026-10-22: Qiskit 2.6, Aer 0.18, runtime 0.50, Nature 0.8; qiskit-nature и stim/pymatching идут отдельными extras — смотрите комментарии в файле). Если вы идёте по шагам этого урока — устанавливайте построчно через `pip install`; если хотите один командой — `pip install -r requirements.txt`. Обратная проверка окружения: `pip freeze | findstr qiskit` (Windows) / `pip freeze | grep qiskit` (Linux, macOS).
+Проверенный основной снимок — [requirements-lock.txt](../../requirements-lock.txt): Qiskit 2.6.0, Aer 0.17.2, Runtime 0.50.0, NumPy 2.3.5, SciPy 1.16.3 (2026-10-24). [requirements.txt](../../requirements.txt) задаёт ограниченные диапазоны для проверки обновлений, а не точный снимок. Nature/PySCF и Stim/PyMatching — дополнительные пакеты для соответствующих проектов; они не нужны в этой лабе. Проверка ключевых версий: `python -m pip show qiskit qiskit-aer qiskit-ibm-runtime`.
 
 Ожидаемый вывод — примерно поровну:
 
@@ -115,7 +123,7 @@ print(counts)
 
 Результаты `01` и `10` отсутствуют: кубиты запутаны в состояние Белла $\frac{|00\rangle + |11\rangle}{\sqrt{2}}$ — измерения идеально коррелируют, хотя каждое в отдельности случайно. Это первая наблюдаемая демонстрация запутанности; теория — в [уроке о запутанности](../01-quantum-basics/03-entanglement-measurement.md).
 
-Что произошло с точки зрения теории (строка ket в Qiskit читается как $q_1q_0$, старший бит слева): $|q_1 q_0\rangle = |00\rangle \xrightarrow{H \text{ на } q_0} \frac{|q_1 q_0\rangle = |00\rangle + |01\rangle}{\sqrt{2}} \xrightarrow{\text{CNOT}(q_0 \to q_1)} \frac{|00\rangle + |11\rangle}{\sqrt{2}}$. Здесь важно не перепутать порядок проводов: в этом пояснении по-Qiskit-овски старший бит ($q_1$) пишется слева, поэтому промежуточные слагаемые — $|00\rangle$ и $|01\rangle$, а не $|00\rangle$ и $|10\rangle$. В виджетах курса порядок иной (первый аргумент слева), так что сравнивайте формулы только при явно подписанном порядке.
+Что произошло с точки зрения теории (кет читается как $|q_1 q_0\rangle$, `q0` — младший бит справа): $|q_1 q_0\rangle = |00\rangle \xrightarrow{H \text{ на } q_0} \frac{|00\rangle + |01\rangle}{\sqrt{2}} \xrightarrow{\text{cx}(0, 1)} \frac{|00\rangle + |11\rangle}{\sqrt{2}}$. Обратите внимание: $H$ на `q0` даёт `|01⟩` (меняется младший бит), а не `|10⟩`; после `cx(0, 1)` (управляющий `q0`, цель `q1`) слагаемые становятся `|00⟩` и `|11⟩`. Это то же соглашение, что и в виджетах, и в `counts`: полный справочник — [CONVENTIONS.md](../../CONVENTIONS.md).
 
 ## Альтернативный вариант через Jupyter
 
@@ -142,7 +150,7 @@ jupyter notebook
 |---|---|---|
 | `pip install` ставит пакет «не туда» | не активирован venv, pip глобальный | проверьте `pip --version`: путь должен содержать `.venv` |
 | `ModuleNotFoundError: qiskit` | работа без активного окружения | активируйте venv, повторите установку |
-| `cannot import name 'execute'` / устаревшие туториалы | старый Qiskit 0.x или скопированный код из устаревших материалов | обновите: `pip install -U qiskit`; используйте `sim.run(qc)` вместо `execute()` |
+| `cannot import name 'execute'` / устаревшие туториалы | старый Qiskit 0.x или скопированный код из устаревших материалов | восстановите стек: `python -m pip install -r requirements-lock.txt`; используйте `sim.run(qc)` вместо `execute()` |
 | PowerShell блокирует Activate.ps1 | политика выполнения скриптов | `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` |
 | путаница conda vs venv | одновременно используются два менеджера окружений | выберите один подход; с conda используйте `conda activate`, а не venv-скрипты |
 | `qiskit-aer` не установлен | симулятор — отдельный пакет | `pip install qiskit-aer` |

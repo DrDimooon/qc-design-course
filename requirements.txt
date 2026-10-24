@@ -1,19 +1,21 @@
-# Проверенный набор для учебного кода курса.
-# Снимок окружения аудита 2026-10-22 (Python 3.13):
-#   pip install -r requirements.txt
-# Минимальные версии курс примет и новее, если примеры продолжат работать;
-# при поломке API см. требования соответствующей лабы (например, qiskit-nature
-# >= 0.8 для проекта 03-vqe-h2).
+# Допустимые диапазоны основного учебного стека (проверка 2026-10-24).
+# Воспроизводимый снимок с транзитивными зависимостями: requirements-lock.txt.
+#   python -m pip install -r requirements-lock.txt
+# Этот файл предназначен для проверки новых версий ВНУТРИ диапазонов:
+#   python -m pip install --upgrade -r requirements.txt
+# Диапазон не означает, что каждая его версия уже проверена. Qiskit 3 / Runtime
+# 0.51 требуют отдельной миграции; Python 3.11.9 проверен локально на Windows.
 
-numpy>=2.5.4
-scipy>=1.14
-qiskit>=2.6.0
-qiskit-aer>=0.18.0
-qiskit-ibm-runtime>=0.50.0
-matplotlib>=3.9
+numpy>=2.3.5,<3
+scipy>=1.16.3,<1.17
+qiskit>=2.6.0,<2.7
+qiskit-aer>=0.17.2,<0.18
+qiskit-ibm-runtime>=0.50.0,<0.51
+matplotlib>=3.10.3,<3.11
 
 # --- extras (ставить только для нужных треков) ---
 # Химия / VQE (проект 03-vqe-h2):
-#   pip install qiskit-nature[pyscf]>=0.8.0
+#   python -m pip install "qiskit-nature[pyscf]>=0.7,<0.9"
+# PySCF-путь не входит в проверенный основной снимок; см. проект 03-vqe-h2.
 # Разбор Willow / QEC (урок 06.03):
-#   pip install stim>=1.16.0 pymatching>=2.4.0
+#   python -m pip install "stim==1.16.0" "pymatching==2.4.0"
