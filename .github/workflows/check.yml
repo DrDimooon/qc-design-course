@@ -33,6 +33,9 @@ jobs:
       - name: Markdown example discovery and failure-path tests (no SDK needed)
         run: python -X utf8 tools/test_example_blocks.py
 
+      - name: Keep local reports out of the published site
+        run: python -X utf8 tools/test_publication.py
+
       - name: Build the site (warnings are errors)
         run: python tools/build_site.py --strict
 

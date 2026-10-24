@@ -23,8 +23,7 @@ import re
 import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-SKIP_DIRS = {".git", "site", ".site-build", "node_modules", "__pycache__", ".venv", "venv"}
-SKIP_FILES = {"AUDIT-NOTES.md"}
+SKIP_DIRS = {".git", "site", ".site-build", ".local", "node_modules", "__pycache__", ".venv", "venv"}
 FM_KEYS = ("title", "module", "difficulty", "duration", "status", "tags")
 CUSTOM_TYPES = ("analogy", "intuition", "red-flag", "practically")
 
@@ -40,7 +39,7 @@ def md_files() -> list[str]:
     for dirpath, dirnames, filenames in os.walk(ROOT):
         dirnames[:] = [d for d in dirnames if d not in SKIP_DIRS]
         for name in filenames:
-            if name.endswith(".md") and name not in SKIP_FILES:
+            if name.endswith(".md"):
                 out.append(os.path.join(dirpath, name))
     return sorted(out)
 
@@ -174,7 +173,7 @@ print("незакрытый блок")
 
 
 def selftest() -> int:
-    """Негативный и позитивный контроль fence-проверки (E071 из аудита)."""
+    """Негативный и позитивный контроль fence-проверки."""
     scratch = os.path.join(ROOT, ".selftest-tmp")
     os.makedirs(scratch, exist_ok=True)
     good = os.path.join(scratch, "good.md")

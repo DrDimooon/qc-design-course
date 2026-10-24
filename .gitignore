@@ -19,6 +19,15 @@ node_modules/
 
 # Служебные файлы
 transcripts.jsonl
+.local/
+AUDIT-*
+audit-*
+AUDIT_*
+audit_*
+REVIEW-NOTES.*
+review-notes.*
+REVIEW-REPORT*
+review-report*
 
 # Тесты и кэши
 .pytest_cache/

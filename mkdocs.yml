@@ -4,10 +4,6 @@ site_author: "DrDimooon"
 
 docs_dir: "."
 
-# Рабочие заметки аудита не публикуются на сайте
-exclude_docs: |
-  AUDIT-NOTES.md
-
 theme:
   name: material
   language: ru

@@ -16,6 +16,7 @@
 from __future__ import annotations
 
 import argparse
+from fnmatch import fnmatchcase
 import os
 import re
 import shutil
@@ -37,8 +38,25 @@ EXCLUDE_DIRS = {
     ".venv",
     "venv",
     ".pytest_cache",
+    ".local",
 }
 EXCLUDE_FILES = {"transcripts.jsonl", "package.json", "package-lock.json"}
+PRIVATE_REPORT_PATTERNS = ("audit-*", "audit_*", "review-notes.*", "review-report*")
+
+
+def exclude_from_site(name: str) -> bool:
+    """Exclude local/service content even when it is not tracked or in the nav."""
+    return (
+        name.startswith(".")
+        or name in EXCLUDE_DIRS
+        or name in EXCLUDE_FILES
+        or name.endswith(".pyc")
+        or any(fnmatchcase(name.casefold(), pattern) for pattern in PRIVATE_REPORT_PATTERNS)
+    )
+
+
+def ignore_private_content(directory: str, names: list[str]) -> set[str]:
+    return {name for name in names if exclude_from_site(name)}
 
 # Маркер интерактивного виджета в исходниках: <!--qc-embed: файл.html | Заголовок | высота-->
 # В репозитории GitHub не исполняет <iframe>, поэтому в .md лежит только маркер
@@ -92,18 +110,16 @@ def stage_content(staging: Path) -> Path:
     docs.mkdir(parents=True)
 
     for item in ROOT.iterdir():
-        if item.name in EXCLUDE_DIRS or item.name.startswith("."):
+        if exclude_from_site(item.name):
             continue
         target = docs / item.name
         if item.is_dir():
             shutil.copytree(
                 item,
                 target,
-                ignore=shutil.ignore_patterns(*EXCLUDE_DIRS, "*.pyc"),
+                ignore=ignore_private_content,
             )
         else:
-            if item.name in EXCLUDE_FILES:
-                continue
             shutil.copy2(item, target)
     widgets = expand_widgets(docs)
     if widgets:

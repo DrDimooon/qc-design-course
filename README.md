@@ -239,7 +239,7 @@ QC/
 
 - Правило прогресса: **урок → локальные вопросы урока («Проверь себя») → [лаба/проект по модулю](projects/README.md)**. Модульные квизы ([tests/00-quiz.md](tests/00-quiz.md) … [05-quiz.md](tests/05-quiz.md)) проходите **в конце модуля**, когда все его уроки закрыты — вопрос квиза может опираться на материал нескольких уроков, а не только предыдущего урока; для контроля шага урока достаточно его локальных вопросов.
 - Второй контур закрепления — интервальные повторения по колоде [flashcards.md](tests/flashcards.md) (метод Quantum Country: 20 карточек в сессию, расписание и экспорт в Anki — в [flashcards-schedule.md](tests/flashcards-schedule.md)). В модулях 00 и 03 дополнительно есть аналитические problem sets без кода: [problem-set-00](curriculum/00-fundamentals/problem-set-00.md), [problem-set-03](curriculum/03-algorithms/problem-set-03.md).
-- Практика «маленькими глотками» — квантовые каты в стиле Microsoft Quantum Katas: [tests/katas/README.md](tests/katas/README.md): сейчас 5 кат (Bell, Гровер на 2 кубитах, API Qiskit, настройка transpile, seeds Sabre); внутри каждой каты — задачи с TODO-кодами, подсказками и решениями в answers. Расширение до 12–15 кат — в планах ([ROADMAP.md](ROADMAP.md#аудит-2026-10-23-принято-и-отложено)).
+- Практика «маленькими глотками» — квантовые каты в стиле Microsoft Quantum Katas: [tests/katas/README.md](tests/katas/README.md): сейчас 5 кат (Bell, Гровер на 2 кубитах, API Qiskit, настройка transpile, seeds Sabre); внутри каждой каты — задачи с TODO-кодами, подсказками и решениями в answers. Расширение до 12–15 кат — в [планах развития](ROADMAP.md#развитие-курса).
 - Отслеживайте прогресс в [PROGRESS.md](PROGRESS.md): отмечайте выполненные уроки, лабы, тесты и проекты чек-боксами.
 - Ориентир по плану и вехам — [ROADMAP.md](ROADMAP.md).
 
@@ -284,9 +284,8 @@ python tools/build_site.py --serve    # локальный предпросмо�
 
 ## Планируемые улучшения
 
-Курс прошёл **стабилизацию по аудиту 2026-10-23**: приоритет — честные ожидания, единые соглашения и воспроизводимость, а не новый контент. Принятые и отложенные пункты — в [ROADMAP.md](ROADMAP.md#аудит-2026-10-23-принято-и-отложено).
+Планы развития — в [ROADMAP.md](ROADMAP.md#развитие-курса):
 
-- Единая [диагностика 00](tests/diagnostic-00.md) и [соглашение о порядке кубитов](CONVENTIONS.md) добавлены.
 - Юпитер-ноутбуки к каждой лабе и кате с авторскими разборами.
 - Автоматизированные тесты решений (pytest) для проектов и кат; CI-прогон исполняемых примеров покрывает ключевые примеры (smoke), а не полный набор сниппетов.
 - Градуер для кат: проверка assert-цепочек из continuous integration (GitHub Actions).
@@ -298,6 +297,7 @@ python tools/build_site.py --serve    # локальный предпросмо�
 ```bash
 python -X utf8 tools/check_examples.py
 python -X utf8 tools/test_example_blocks.py
+python -X utf8 tools/test_publication.py
 node tools/js/qc-core.test.js
 node tools/js/qc-playground.test.js
 python tools/check_docs.py --selftest
