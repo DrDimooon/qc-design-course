@@ -67,7 +67,7 @@ from qiskit.quantum_info import Statevector
 
 qc = QuantumCircuit(1)
 qc.h(0)          # |0> -> |+>
-qc.h(0)          # |+> -> |0>  (это H† = H, т.е. обратимость, а не интерференция)
+qc.h(0)          # |+> -> |0>  (дважды H: и H² = I (обратимость), и та же отмена видна как интерференция: +1/2 и -1/2 гасятся для |1>, +1/2+1/2 = 1 для |0>)
 print(Statevector(qc))  # Statevector([1.+0.j, 0.+0.j], dims=(2,))
 ```
 

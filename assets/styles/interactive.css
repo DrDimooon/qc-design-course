@@ -189,3 +189,21 @@
 .MathJax_Preview {
   display: none !important;
 }
+
+/* --- Широкие display-формулы не должны расширять страницу на мобильных: --- */
+/* даём формуле собственную горизонтальную прокрутку (M08 из аудита).        */
+.md-typeset mjx-container[display="true"] {
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-bottom: 4px;
+}
+
+/* Скрытый MathML-дубль формулы (для скринридеров) живёт в абсолютной рамке: */
+/* его собственный бокс (min-content формулы) расширял страницу на мобильных */
+/* даже при overflow: hidden — обрезаем бокс целиком (visually-hidden).      */
+.md-typeset mjx-container mjx-assistive-mml {
+  width: 1px !important;
+  height: 1px !important;
+  overflow: hidden;
+}

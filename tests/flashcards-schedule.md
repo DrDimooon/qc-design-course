@@ -115,20 +115,35 @@ import re, sys, pathlib
 
 src = pathlib.Path(sys.argv[1] if len(sys.argv) > 1 else "tests/flashcards.md").read_text(encoding="utf-8")
 src = re.sub(r"`{3}.*?`{3}", "", src, flags=re.S)  # выкинуть code-блоки: в файле есть пример разметки
-rows = []
-CARD = re.compile(
-    r"###\s+(\d{2}\.\d{2})[^\n]*\n\*\*Q:\*\*\s*([^\n]+)\n"
-    r"<details[^>]*>\s*<summary>Ответ</summary>\n?(.*?)</details>",
-    re.S,
-)
-for cid, q, a in CARD.findall(src):
-    a = re.sub(r"Источник:.*$", "", a, flags=re.S)            # хвост источника
-    a = re.sub(r"\[([^\]]+)\]\([^)]*\)", r"\1", a)            # ссылки -> текст
-    a = re.sub(r"\s+", " ", a).strip()                        # одна строка
-    q = re.sub(r"\s+", " ", q).strip()
-    if "--mathjax" in sys.argv:                               # $...$ -> \(...\) для Anki
+
+# Разбиваем по заголовкам карточек: ID берём из '### NN.MM'.
+HEAD = re.compile(r"^###\s+(\d{2}\.\d{2})\b", re.M)
+blocks, heads = [], list(HEAD.finditer(src))
+for i, m in enumerate(heads):
+    end = heads[i + 1].start() if i + 1 < len(heads) else len(src)
+    blocks.append((m.group(1), src[m.end():end]))
+
+rows, seen = [], set()
+for cid, body in blocks:
+    qm = re.search(r"\*\*Q:\*\*(.*?)(?=<details\b)", body, re.S)   # Q может быть многострочным
+    am = re.search(r"<details[^>]*>.*?<summary>Ответ</summary>\n?(.*?)</details>", body, re.S)
+    if not qm or not am:   # битый блок — лучше упасть, чем молча потерять карточку
+        sys.exit(f"карточка {cid}: не найден **Q:** или <details> с <summary>Ответ</summary>")
+    q = re.sub(r"\s+", " ", qm.group(1)).strip()
+    a = re.sub(r"Источник:.*$", "", am.group(1), flags=re.S)      # хвост источника
+    a = re.sub(r"\[([^\]]+)\]\([^)]*\)", r"\1", a)                # ссылки -> текст
+    a = re.sub(r"\s+", " ", a).strip()                            # одна строка
+    if "--mathjax" in sys.argv:                                   # $...$ -> \(...\) для Anki
         q, a = (re.sub(r"\$([^$]+)\$", r"\\(\1\\)", s) for s in (q, a))
+    if not q or not a:
+        sys.exit(f"карточка {cid}: пустой вопрос или ответ")
     rows.append(f"{cid}\t{q}\t{a}")
+    seen.add(cid)
+
+src_ids = [m.group(1) for m in heads]
+missing = sorted(set(src_ids) - seen)   # сравнение множеств, а не только счётчиков
+if missing or len(seen) != len(set(src_ids)):
+    sys.exit(f"потеряны карточки: {missing or 'дубли ID'}")
 if not rows:   # ноль карточек — всегда сбой сбора, а не «успешный экспорт»
     sys.exit("0 карточек: проверьте формат — <details> может нести атрибуты "
              "(<details markdown=\"1\">), шаблон ищет именно это")

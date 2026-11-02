@@ -78,6 +78,23 @@ class BuiltSiteBrowserTests(unittest.TestCase):
         self.assertTrue(all(self.page.locator(".qc-mermaid").evaluate_all(
             "es => es.map(e => e.getAttribute('data-processed') === 'true')")))
 
+    def test_heavy_math_pages_do_not_scroll_horizontally(self):
+        # Регрессия M08: бокс скрытого assistive-MML и широкие display-формулы
+        # расширяли страницу за viewport. Эталонная страница — entanglement.
+        for lesson in ("curriculum/01-quantum-basics/03-entanglement-measurement/",
+                       "curriculum/00-fundamentals/problem-set-00/",
+                       "curriculum/03-algorithms/02-qft-shor/",
+                       "curriculum/04-systems-design/02-transpiler-internals/"):
+            with self.subTest(lesson=lesson):
+                self.assertEqual(self.page.goto(self.base + lesson).status, 200)
+                self.page.wait_for_load_state("networkidle")
+                self.page.wait_for_timeout(700)
+                for width in (375, 320):
+                    self.page.set_viewport_size({"width": width, "height": 800})
+                    self.assertLessEqual(
+                        self.page.evaluate("document.documentElement.scrollWidth"), width,
+                        f"{lesson}: горизонтальная прокрутка при {width}px")
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
