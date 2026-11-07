@@ -33,11 +33,11 @@ _Урок: [../../curriculum/01-quantum-basics/03-entanglement-measurement.md](.
 
 ## Вопрос 6 (модуль 02)
 **Ответ: C.** V2-примитивы возвращают list PubResult; counts: result[0].data.meas.get_counts(). 'evs' — поле Estimator, а quasi_dists — наследие V1 Sampler'а.
-_Урок: [../../curriculum/02-programming/README.md](../../curriculum/02-programming/README.md)._
+_Урок: [lab-03-ibm-quantum-run.md](../../curriculum/02-programming/lab-03-ibm-quantum-run.md)._
 
 ## Вопрос 7 (модуль 02)
 **Ответ: A.** Параметры схемы нужно привязать до исполнения: `qc.assign_parameters({"θ": value})`, затем sim.run. (Метод `bind_parameters` у QuantumCircuit в Qiskit 2.x уже удалён — в актуальном API его нет; актуальный API — assign_parameters.) Сами по себе параметры при execute не резолвятся.
-_Урок: [../../curriculum/02-programming/README.md](../../curriculum/02-programming/README.md)._
+_Урок: [02-gates-circuits-qiskit.md](../../curriculum/02-programming/02-gates-circuits-qiskit.md)._
 
 ## Вопрос 8 (модуль 02)
 **Ответ: B.** init → layout → routing → translation → optimization (→ scheduling). Прочие порядки нарушают логику конвейера: замерить нельзя до привязки к физическим кубитам.
@@ -45,19 +45,19 @@ _Урок: [../../curriculum/04-systems-design/02-transpiler-internals.md](../..
 
 ## Вопрос 9 (модуль 02)
 **Ответ: B.** В Qiskit counts — строка, где **левый** символ соответствует старшему классическому биту ($c_{n-1}$), т.е. для трёх бит читается как c2 c1 c0. Little-endian относится к индексам битов: `q0` — младший/правый. Состояние q2=0, q1=1, q0=1 даёт '011' (число 3). Вариант A '110' = q2=1, q1=1, q0=0 — это другая физическая картина (X на q2 и q1), а не разная «запись». Decimal 3 — это то же состояние, но формат строки counts — '011'.
-_Урок: [../../curriculum/02-programming/README.md](../../curriculum/02-programming/README.md)._
+_Соглашение: [CONVENTIONS.md](../../CONVENTIONS.md)._
 
 ## Вопрос 10 (модуль 03)
 **Ответ: C.** π/4·√4096 = π/4·64 ≈ 50.28 — примерно 50 итераций: квадратичный выигрыш, но всё ещё линейно от √N, а не log N.
-_Урок: [../../curriculum/03-algorithms/README.md](../../curriculum/03-algorithms/README.md)._
+_Урок: [01-grover.md](../../curriculum/03-algorithms/01-grover.md)._
 
 ## Вопрос 11 (модуль 03)
 **Ответ: A.** Речь о каскаде **без финальных SWAP**, а не об обратном QFT. Добавление перестановки выходных разрядов делает его эквивалентным `QFTGate(n)` / `synth_qft_full(n, do_swaps=True)`. Полный QFT уже содержит эту перестановку; при осознанном опускании SWAP порядок нужно учитывать явно.
-_Урок: [../../curriculum/03-algorithms/README.md](../../curriculum/03-algorithms/README.md)._
+_Урок: [02-qft-shor.md](../../curriculum/03-algorithms/02-qft-shor.md)._
 
 ## Вопрос 12 (модуль 03)
 **Ответ: D.** Стабилизаторы заданы в порядке $|q_2 q_1 q_0\rangle$: $S_1 = Z_2 Z_1 I_0$ (пара q2↔q1), $S_2 = I_2 Z_1 Z_0$ (пара q1↔q0). Ошибка $X$ на q1 нарушает **обе** пары: $S_1 = -1$ (q2↔q1 не совпали) и $S_2 = -1$ (q1↔q0 не совпали), значит синдром $(S_1,S_2) = (-1,-1)$ = '11'. Проверка: ошибка на q0 дала бы $(+1,-1)$='01', на q2 — $(-1,+1)$='10'.
-_Урок: [../../curriculum/03-algorithms/README.md](../../curriculum/03-algorithms/README.md)._
+_Урок: [04-error-correction.md](../../curriculum/03-algorithms/04-error-correction.md)._
 
 ## Вопрос 13 (модуль 04)
 **Ответ: A.** Backward-проход — двунаправленный обход, уточняющий начальную раскладку: результат реверснутого роутинга оценивает «ухудшает ли карта хвост схемы» и подкладывает ландшафтом стартовые карты следующей попытки. Score отдельного SWAP-кандидата при этом строится только из front layer и extended set с decay — обратный проход в него не входит.
@@ -144,7 +144,7 @@ _Урок: [../../curriculum/06-publications/03-google-willow-qec.md](../../curr
 
 ## Вопрос 23 (модуль 06, практическое — Part D)
 **Ожидание:** пять пунктов шаблона (главное утверждение своими словами; тип статьи; главная метрика и единицы; одна выполнимая численная проверка с результатом; ограничения по одной из статей/разборов). Проверка: (1) формулировка не копирует текст статьи; (2) метрика и её единицы названы явно (например, «p_L за цикл», «Λ с интервалом», «# лог. кубитов»); (3) проверка реально выполнена (Stim-симуляция/вычисление), воспроизводима (seed/шоты зафиксированы); (4) честно разделено «проверено кодом» и «на веру»; (5) отмечено ограничение, которое авторы называют. Ответ не сравниваем с «идеальным» образцом — проверяем внутреннюю согласованность разбора.
-_Урок: [../../curriculum/06-publications/README.md](../../curriculum/06-publications/README.md)._
+_Урок: [01-how-to-read-paper.md](../../curriculum/06-publications/01-how-to-read-paper.md)._
 
 ## Разбалловка и критерии
 

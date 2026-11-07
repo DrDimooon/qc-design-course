@@ -134,7 +134,8 @@ def estimate_fidelity(circ, target, fallback_1q=1e-3):
 
     Это не измеренная fidelity и не вероятность правильного ответа, а
     эвристическая согласованность с Target: для каждой 2q-инструкции читаем
-    свойства именно фактической пары (name, qargs); направленный гейт с другим
+    свойства именно фактической пары (name, qargs); error=None даёт ValueError
+    вместо подстановки нуля; направленный гейт с другим
     направлением или нестандартным именем НЕ подменяется обратной операцией —
     вход, которого нет в Target, считается явно некалиброванным.
     """
@@ -144,13 +145,14 @@ def estimate_fidelity(circ, target, fallback_1q=1e-3):
         qargs = tuple(circ.find_bit(b).index for b in inst.qubits)
         if inst.operation.num_qubits == 2:
             props = target[name].get(qargs)     # читаём по факту: name + направление
-            if props is not None:
-                f *= (1.0 - (props.error or 0.0))
-            else:
+            if props is None:
                 raise KeyError(f"2q-инструкция ({name}, {qargs}) отсутствует в Target — "
                                f"схема не согласована с нативным базисом; подставлять "
                                f"обратное направление нельзя: у направленного гейта "
                                f"ошибка обеих ориентаций может быть разной")
+            if props.error is None:
+                raise ValueError("2q error is unknown")
+            f *= 1.0 - props.error
         elif name not in ("barrier", "delay", "measure", "reset", "id"):
             f *= (1.0 - fallback_1q)   # типовая 1q-ошибка заглушки:
                                        # 1q-свойство можно подобрать и по target[name][qargs]
@@ -159,7 +161,7 @@ def estimate_fidelity(circ, target, fallback_1q=1e-3):
 print("score est.:", estimate_fidelity(tq, backend.target))
 ```
 
-Замечания к модели: значение выводится как **эвристический score** (оценка исполнимости), а не как измеренные fidelity или вероятность правильного ответа. Список нативных 2q-инструкций различается между бэкендами (`backend.target.operation_names` — `cx`, `ecr`, `cz`), поэтому считайте по фактическому имени гейта схемы. Схема должна выйти из transpile уже в нативном базисе — тогда KeyError указывает либо на несовместимый target, либо на барьерные/вспомогательные операции, попавшие в цикл по ошибке (отфильтруйте их явно). Точность модели — мультипликативная «ошибки независимы»: она не учитывает crosstalk и коррелированные ошибки; обратное направление направленного гейта не подменяется, а неучтённая (калибровочная) 1q-инструкция — единственная честная заглушка.
+Замечания к модели: значение выводится как **эвристический score** (оценка исполнимости), а не как измеренные fidelity или вероятность правильного ответа. Список нативных 2q-инструкций различается между бэкендами (`backend.target.operation_names` — `cx`, `ecr`, `cz`), поэтому считайте по фактическому имени гейта схемы. Схема должна выйти из transpile уже в нативном базисе — тогда KeyError указывает либо на несовместимый target, либо на барьерные/вспомогательные операции, попавшие в цикл по ошибке (отфильтруйте их явно). `ValueError("2q error is unknown")` означает другой случай: инструкция есть, но её 2q-ошибка не откалибрована; такие данные нельзя считать нулевой ошибкой. Точность модели — мультипликативная «ошибки независимы»: она не учитывает crosstalk и коррелированные ошибки; обратное направление направленного гейта не подменяется. Именованный `fallback_1q` остаётся отдельной, явно заданной заглушкой только для 1q-гейтов и не подменяет чтение их калибровок из `Target` в содержательной модели.
 
 Практика: сравнивая два набора пассов (например, optimization_level 1 и 3, или два routing-метода), считайте estimated fidelity, а не только depth и число гейтов. Сравнение чисел — основа co-design, к которой мы вернёмся в уроке 05.
 
@@ -167,11 +169,42 @@ print("score est.:", estimate_fidelity(tq, backend.target))
 
 На одном чипе есть три семейства борцов с ошибками, и компилятор участвует в одном из них:
 
-1. **Error suppression (компиляторное поле).** Dynamical decoupling — вставка последовательностей X/Y-импульсов в простои кубита, которая «дробит» накопление фазовых ошибок. В Qiskit 2.x это пасс `PadDynamicalDecoupling` (плюс `ContextAwareDynamicalDecoupling` — вариант, учитывающий занятость соседей), который ставится в PassManager после scheduling. Ключевая деталь: DD требует уже построенного расписания (delays), поэтому применяется как дополнительный пасс поверх уже запланированной (scheduled) схемы. В Qiskit 1.x существовал отдельный пасс `DynamicalDecoupling`, но в 2.x он удалён — импортировать его больше нельзя.
+1. **Error suppression (компиляторное поле).** Dynamical decoupling — вставка последовательностей X/Y-импульсов в простои кубита, которая «дробит» накопление фазовых ошибок. В Qiskit 2.x это пасс `PadDynamicalDecoupling` (плюс `ContextAwareDynamicalDecoupling` — вариант, учитывающий занятость соседей), который ставится в PassManager после построения расписания и padding delays. Ключевая деталь: DD требует scheduling-метаданных (`node_start_time`, `time_unit` в `property_set`), поэтому надёжный рецепт — добавить DD-пасс в сцену `scheduling` **того же preset** до `preset.run`. Возвращённый пресетом `QuantumCircuit` сам по себе не воссоздаёт `property_set` прежнего менеджера, поэтому отдельный запуск DD-пасса поверх него может завершиться ошибкой. В Qiskit 1.x существовал отдельный пасс `DynamicalDecoupling`, но в 2.x он удалён — импортировать его больше нельзя.
 2. **Error mitigation (запусковое поле).** Zero-Noise Extrapolation (ZNE): серия экспериментов с намеренно усиленным шумом (pulse stretching либо circuit folding — подстановка $U \to U\cdot U^\dagger\cdot U$, добавляющая гейты и глубину) с последующей экстраполяцией к нулевому шуму. Probabilistic Error Cancellation (PEC): по измеренным шумам строится квазивероятностное представление обратного канала, из которого сэмплируется ансамбль **изменённых** схем; результаты собираются и взвешиваются в один статистический ответ. Итак, mitigation редко является «бесплатной» постобработкой: ZNE и PEC меняют состав исполняемых экспериментов (folding добавляет гейты; PEC исполняет ансамбль схем и взвешивает результаты). Инструменты — runtime-сервисы (qiskit-ibm-runtime `Resilience`-уровни, Mitiq). Варианты без изменения логической структуры существуют (readout mitigation, простые пост-обработки), но ZNE/PEC к ним не относятся.
 3. **Error correction (прикладное поле).** Коды требуют дополнительных кубитов и упомянуты как FT-трек в уроке 01 (обзор QEC — в модуле 03).
 
 Для noise-aware компилятора важно разделить три слоя: suppression меняет саму схему (DD-импульсы в delays), mitigation меняет **набор исполняемых экспериментов и постобработку** (ZNE/PEC), correction — архитектуру системы. Тем не менее грамотный scheduling (включая dynamical decoupling) может сильно снизить потребность в mitigation. Так формируется pipeline suppress → mitigate → correct. Для унитарного $U$ сравните $U$ и $U\cdot U^\dagger\cdot U$: идеальный оператор тот же, но исполняемая последовательность длиннее — счёт гейтов и глубина растут.
+
+```python
+# qc: executable
+from qiskit import QuantumCircuit
+from qiskit.circuit.library import XGate
+from qiskit.providers.fake_provider import GenericBackendV2
+from qiskit.transpiler import generate_preset_pass_manager
+from qiskit.transpiler.passes import PadDynamicalDecoupling
+
+backend_dd = GenericBackendV2(2, seed=42)
+qc_dd = QuantumCircuit(2)
+qc_dd.x(0)
+qc_dd.cx(0, 1)
+qc_dd.measure_all()
+
+preset_dd = generate_preset_pass_manager(
+    optimization_level=1, backend=backend_dd,
+    scheduling_method="alap", seed_transpiler=42,
+)
+# До run: schedule-analysis, PadDelay и DD используют общий property_set.
+preset_dd.scheduling.append(PadDynamicalDecoupling(
+    durations=backend_dd.target.durations(),
+    dd_sequence=[XGate(), XGate()],
+))
+dd_circ = preset_dd.run(qc_dd)
+print("операции после DD:", dd_circ.count_ops())
+# В простои добавились два X, плюс исходный: DD действительно подставил импульсы.
+assert dd_circ.count_ops().get("x", 0) == 3
+assert dd_circ.count_ops().get("delay", 0) >= 1
+```
+
 
 ## Практические рекомендации
 

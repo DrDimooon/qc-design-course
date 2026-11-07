@@ -36,9 +36,10 @@ tools/
 из `curriculum/<модуль>/<урок>.md` — это `../../assets/...`, из корня
 репозитория — `assets/...`:
 
-```html
-<iframe class="qc-embed" src="../../assets/interactive/bloch-sphere.html"
-        title="Сфера Блоха" height="560" loading="lazy"></iframe>
+```markdown
+<!--qc-embed: bloch-sphere.html | Сфера Блоха | 560-->
+
+[Открыть виджет «Сфера Блоха»](../../assets/interactive/bloch-sphere.html)
 ```
 
 Схема в уроке — обычный блок кода с тегом `mermaid`:
@@ -178,13 +179,24 @@ flowchart LR
 
 ## Проверка слоя
 
+В Bash:
+
 ```bash
 node tools/js/qc-core.test.js     # проверки математики библиотеки
 node tools/js/qc-playground.test.js
-node --check assets/js/widget-*.js
+for file in assets/js/widget-*.js; do
+  node --check "$file"
+done
 python tools/make_figures.py      # перегенерация иллюстраций
 python tools/build_site.py        # сборка сайта в ./site
 python tools/test_widgets_browser.py  # отдельная зависимость: Python Playwright + Chromium
+```
+
+В Windows PowerShell подстановка `widget-*.js` не работает как в Bash, а
+`node --check` принимает один файл, поэтому синтаксис всех виджетов проверяют циклом:
+
+```powershell
+Get-ChildItem assets/js/widget-*.js | ForEach-Object { node --check $_.FullName; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE } }
 ```
 
 Браузерные unittest-тесты поднимают временный HTTP-сервер только на

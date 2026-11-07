@@ -161,7 +161,7 @@ Z (то же, что $R_Z(\pi)$): смена знака амплитуды пр�
 <details markdown="1">
 <summary>Ответ</summary>
 
-$\mathrm{SWAP}_{ab} = \mathrm{CNOT}_{ab} \cdot \mathrm{CNOT}_{ba} \cdot \mathrm{CNOT}_{ab}$ — три двухкубитных гейта. Поэтому каждая вставка SWAP при routing — три статьи расхода из error budget, а не одна.
+$\mathrm{SWAP}_{ab} = \mathrm{CNOT}_{ab} \cdot \mathrm{CNOT}_{ba} \cdot \mathrm{CNOT}_{ab}$ — три двухкубитных гейта. Поэтому в CX-базисе без дальнейшей оптимизации каждая вставка SWAP при routing добавляет три CX в error budget, а не одну двухкубитную операцию.
 Источник: [02-gates-circuits.md](../curriculum/01-quantum-basics/02-gates-circuits.md)
 </details>
 
@@ -355,7 +355,7 @@ No-cloning theorem запрещает копировать произвольн�
 <details markdown="1">
 <summary>Ответ</summary>
 
-Mitigation (ZNE, PEC) — постобработка результатов: структура схемы не меняется, кубиты не добавляются. Correction (QEC) — коды: требуются дополнительные физические кубиты и реальное время декодирования (fault-tolerant режим). В NISQ доступна mitigation (в Qiskit — ручка resilience level), а QEC — путь к устойчивому масштабированию.
+Mitigation использует повторные, возможно изменённые эксперименты и постобработку без анцилл QEC. Простая readout mitigation опирается на калибровочные измерения и поправляет статистику исходной схемы; ZNE изменяет схему (например, folding для масштабирования шума) и экстраполирует серию результатов к нулевому шуму; PEC использует ансамбли изменённых схем и взвешенную постобработку. Correction (QEC) — коды: требуются дополнительные физические кубиты и декодирование в реальном времени (fault-tolerant режим). В NISQ доступна mitigation (в Qiskit — ручка resilience level), а QEC — путь к устойчивому масштабированию.
 Источник: [04-error-correction.md](../curriculum/03-algorithms/04-error-correction.md)
 </details>
 
@@ -393,7 +393,7 @@ Algorithm (логическая схема) → Compiler (layout/routing/transla
 <details markdown="1">
 <summary>Ответ</summary>
 
-У квадратной решётки degree 4–5 у кубита усиливает паразитные связи между каналами (crosstalk); в heavy-hex degree 2–3. Цена — удлинение путей и SWAP-цепочки, то есть рост depth; бонус — хорошая совместимость с планом surface code.
+У квадратной решётки у внутренних узлов degree 4, ниже на границах; большая степень усиливает паразитные связи между каналами (crosstalk), а в heavy-hex degree 2–3. Цена — удлинение путей и SWAP-цепочки, то есть рост depth; бонус — хорошая совместимость с планом surface code.
 Источник: [01-architecture-models.md](../curriculum/04-systems-design/01-architecture-models.md)
 </details>
 
@@ -548,6 +548,6 @@ TLS — two-level systems: случайные двухуровневые деф�
 <details markdown="1">
 <summary>Ответ</summary>
 
-EPLG — средняя 2q-ошибка «поезда» из $d$ слоёв через весь процессор: $\mathrm{LF}(d) = \exp(-d \cdot \text{EPLG})$; это честнее одиночного рекорда, потому что включает связность и неоднородность. CLOPS (слоёв в секунду с учётом runtime: батчи, очередь, время считывания) ограничивает скорость вариационных алгоритмов — там нужны сотни–тысячи итераций по параметрам.
+Layer fidelity LF измеряется для бенчмаркируемой цепочки/слоя с $N_{2q}$ двухкубитными гейтами, а EPLG — средняя ошибка на 2q-гейт: $\mathrm{EPLG} = 1 - \mathrm{LF}^{1/N_{2q}}$. Для малых ошибок $\mathrm{LF} \approx \exp(-N_{2q} \cdot \mathrm{EPLG})$; нормировка идёт по числу 2q-гейтов, а не по числу временных слоёв. Это честнее одиночного рекорда, потому что включает связность и неоднородность. CLOPS (слоёв в секунду с учётом runtime: батчи, очередь, время считывания) ограничивает скорость вариационных алгоритмов — там нужны сотни–тысячи итераций по параметрам.
 Источник: [05-benchmarking.md](../curriculum/05-hardware/05-benchmarking.md)
 </details>

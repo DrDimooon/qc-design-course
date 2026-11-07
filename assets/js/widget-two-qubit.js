@@ -7,7 +7,7 @@
  * Соглашение — Qiskit, единственное во всём курсе (см. CONVENTIONS.md):
  *   кет |q1 q0>, q0 — самый правый, младший бит;
  *   амплитуды |00>, |01>, |10>, |11> (index = 2*q1 + q0);
- *   counts печатаются в том же порядке: '01' — q1 = 0, q0 = 1.
+ *   локальные метки гистограммы печатаются в том же порядке: '01' — q1 = 0, q0 = 1.
  * Поэтому q0 — МЛАДШИЙ разряд, а q1 — старший. CNOT(q0 -> q1) применяется
  * через QC.sv.apply2(state, QC.MAT4.CNOT, 1, 0, N): матрица читается в базисе
  * |q1 q0>, то есть аргументы — (старший кубит пары, младший).
@@ -35,26 +35,10 @@
   /* Индекс в базисе |q1 q0>: index = 2*q1 + q0, поэтому младший разряд
      индекса — это q0, старший — q1. q0 = МЛАДШИЙ бит (соглашение Qiskit). */
 
-  /* Редуцированные амплитуды: сумма амплитуд по второму кубиту. */
-  function reducedAmplitudes(q) {
-    var red;
-    if (q === 0) {
-      /* q0 — младший разряд: фиксируем бит q0, суммируем по q1. */
-      red = [QC.cadd(state[0], state[2]), QC.cadd(state[1], state[3])];
-    } else {
-      /* q1 — старший разряд: фиксируем q1, суммируем по q0. */
-      red = [QC.cadd(state[0], state[1]), QC.cadd(state[2], state[3])];
-    }
-    var n = QC.sv.norm(red);
-    if (n > 1e-12) {
-      red = [QC.cscale(red[0], 1 / n), QC.cscale(red[1], 1 / n)];
-    }
-    return red;
-  }
 
   /* Вероятности исходов одного кубита по отдельности (след по второму). */
-  function reducedProbs(q) {
-    var p = QC.sv.probs(state);
+  function reducedProbs(q, v) {
+    var p = QC.sv.probs(v || state);
     if (q === 0) {
       return [p[0] + p[2], p[1] + p[3]];
     }
@@ -62,21 +46,28 @@
   }
 
   /* Недиагональный элемент редуцированной матрицы плотности rho[0][1]. */
-  function reducedOff(q) {
+  function reducedOff(q, v) {
+    v = v || state;
     if (q === 0) {
       /* q0 младший: пары индексов, различающиеся только битом q0. */
-      return QC.cadd(QC.cmul(state[0], QC.cconj(state[1])),
-                     QC.cmul(state[2], QC.cconj(state[3])));
+      return QC.cadd(QC.cmul(v[0], QC.cconj(v[1])),
+                     QC.cmul(v[2], QC.cconj(v[3])));
     }
-    return QC.cadd(QC.cmul(state[0], QC.cconj(state[2])),
-                   QC.cmul(state[1], QC.cconj(state[3])));
+    return QC.cadd(QC.cmul(v[0], QC.cconj(v[2])),
+                   QC.cmul(v[1], QC.cconj(v[3])));
   }
 
-  /* Чистота редукции Tr(rho^2): 1 — чистое состояние, 0.5 — максимально смешанное. */
-  function reducedPurity(q) {
-    var rp = reducedProbs(q);
-    var o = QC.cabs(reducedOff(q));
-    return rp[0] * rp[0] + rp[1] * rp[1] + 2 * o * o;
+  /* Частичный след: диагональ дают вероятности, а rho01 — когерентность.
+     Для смешанного состояния вектор Блоха строится по rho, а не по амплитудам. */
+  function reducedState(v, q) {
+    var rp = reducedProbs(q, v);
+    var rho01 = reducedOff(q, v);
+    var abs01 = QC.cabs(rho01);
+    return {
+      rho: [[QC.C(rp[0], 0), rho01], [QC.cconj(rho01), QC.C(rp[1], 0)]],
+      bloch: { x: 2 * rho01.re, y: -2 * rho01.im, z: rp[0] - rp[1] },
+      purity: rp[0] * rp[0] + rp[1] * rp[1] + 2 * abs01 * abs01
+    };
   }
 
   /* Конкорренс чистого состояния двух кубитов: C = 2|a00 a11 - a01 a10|. */
@@ -96,20 +87,20 @@
   function drawSphere(canvasId, title, q, textId) {
     var c = QC.dom.canvas(canvasId);
     if (!c) { return; }
-    var red = reducedAmplitudes(q);
-    var b = QC.bloch.fromVector(red);
-    var ang = QC.bloch.angles(b);
-    var deg = 180 / Math.PI;
+    var red = reducedState(state, q);
+    var b = red.bloch;
     QC.draw.sphere(c.ctx, c.width, c.height, b, {
       label: title + ': x=' + b.x.toFixed(2) + '  y=' + b.y.toFixed(2) + '  z=' + b.z.toFixed(2)
     });
 
     var rp = reducedProbs(q);
-    var pur = reducedPurity(q);
+    var pur = red.purity;
     var lines = [];
-    lines.push('редуцированные амплитуды: ' + QC.sv.fmtState(red, 1, 4));
+    lines.push('редуцированная матрица плотности (частичный след):');
+    lines.push('  rho00 = ' + red.rho[0][0].re.toFixed(4) + '  rho01 = ' + QC.cfmt(red.rho[0][1], 4));
+    lines.push('  rho10 = ' + QC.cfmt(red.rho[1][0], 4) + '  rho11 = ' + red.rho[1][1].re.toFixed(4));
     lines.push('вектор Блоха: x=' + b.x.toFixed(2) + '  y=' + b.y.toFixed(2) + '  z=' + b.z.toFixed(2));
-    lines.push('угол сферы: theta = ' + (ang.theta * deg).toFixed(1) + ' градусов, phi = ' + (ang.phi * deg).toFixed(1) + ' градусов');
+
     lines.push('по отдельности: P(0) = ' + (rp[0] * 100).toFixed(1) + '%, P(1) = ' + (rp[1] * 100).toFixed(1) + '%');
     if (pur > 0.999) {
       lines.push('чистота редукции: ' + pur.toFixed(3) + ' (чистое состояние)');
@@ -216,8 +207,7 @@
 
   function doReset() {
     state = QC.sv.basis(N, 0);
-    counts = [0, 0, 0, 0];
-    total = 0;
+    resetMeasurements();
     note = ['Состояние сброшено к |00⟩, счётчики измерений обнулены.'];
     render();
   }
@@ -235,6 +225,7 @@
   function doCompare() {
     /* Сравнение всегда стартует с чистого |00⟩, иначе кнопка зависела бы от
        текущего состояния и результат был бы неоднозначен. */
+    resetMeasurements();
     state = QC.sv.basis(N, 0);
     state = QC.sv.apply1(state, QC.GATES.H, 0, N);
     state = QC.sv.apply1(state, QC.GATES.H, 1, N);
@@ -249,14 +240,21 @@
   /* Инициализация                                                      */
   /* ------------------------------------------------------------------ */
 
+  function resetMeasurements() {
+    counts = [0, 0, 0, 0];
+    total = 0;
+  }
+
   function init() {
     QC.dom.button('btn-h0', 'H на q0', function () {
+      resetMeasurements();
       state = QC.sv.apply1(state, QC.GATES.H, 0, N);
       note = [];
       render();
     }, 'Применить гейт Адамара к кубиту q0 (младший бит, правый разряд кета).');
 
     QC.dom.button('btn-h1', 'H на q1', function () {
+      resetMeasurements();
       state = QC.sv.apply1(state, QC.GATES.H, 1, N);
       note = [];
       render();
@@ -265,6 +263,7 @@
     QC.dom.button('btn-cnot', 'CNOT (q0 -> q1)', function () {
       /* cx(0, 1): контроль q0, цель q1. Матрица MAT4.CNOT читается в базисе
          |q1 q0>, поэтому аргументы apply2 — (старший кубит пары, младший). */
+      resetMeasurements();
       state = QC.sv.apply2(state, QC.MAT4.CNOT, 1, 0, N);
       note = [];
       render();
@@ -289,6 +288,9 @@
 
     render();
   }
+
+  /* Чистая математическая функция доступна и для проверок без DOM. */
+  global.TwoQubit = { reducedState: reducedState };
 
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init);

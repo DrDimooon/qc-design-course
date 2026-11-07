@@ -123,7 +123,7 @@ def template5():
 
 qc5 = template5()
 
-def collect_metrics(cmap, seeds=10, level=1):
+def collect_metrics(cmap, seeds=5, level=1):
     rundata = []
     for seed in range(seeds):
         r = transpile(qc5, coupling_map=cmap, optimization_level=level,

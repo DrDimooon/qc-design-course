@@ -41,6 +41,9 @@ three_cnot = QuantumCircuit(2)
 
 c01 = QuantumCircuit(2)
 c01.cx(0, 1)
+
+c10 = QuantumCircuit(2)
+c10.cx(1, 0)
 ```
 
 Самопроверка:
@@ -48,6 +51,7 @@ c01.cx(0, 1)
 ```python
 assert Operator(three_cnot).equiv(Operator(swap))
 assert not Operator(c01).equiv(Operator(swap))
+assert not Operator(c01).equiv(Operator(c10))
 print("3.1 OK")
 ```
 

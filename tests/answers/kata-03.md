@@ -25,13 +25,18 @@ three_cnot.cx(0, 1)
 c01 = QuantumCircuit(2)
 c01.cx(0, 1)
 
+c10 = QuantumCircuit(2)
+c10.cx(1, 0)
+
 assert Operator(three_cnot).equiv(Operator(swap))
 assert not Operator(c01).equiv(Operator(swap))
+assert not Operator(c01).equiv(Operator(c10))
 ```
 
 Пояснение: разложение SWAP — три чередующихся CNOT (0→1, 1→0, 0→1). `equiv`
 сравнивает унитарные матрицы с точностью до глобальной фазы; отдельный CNOT это
 другая унитарность, и дело не в фазе — SWAP переставляет кубиты, CNOT — нет.
+Направления `cx(0, 1)` и `cx(1, 0)` тоже дают разные, не эквивалентные операторы.
 
 ## 3.2. `Statevector`
 

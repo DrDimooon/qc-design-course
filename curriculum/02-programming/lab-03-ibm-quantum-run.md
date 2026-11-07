@@ -38,12 +38,16 @@ service = QiskitRuntimeService(
 print(service.backends())   # список устройств
 ```
 
-> Токен из `QISKIT_IBM_TOKEN` runtime умеет читать и сам, но тогда не читается
-> `instance` (env-путь подставляет только `token`/`url`/`instance` из конкретных
-> переменных), и поведение может отличаться от сохранённого профиля. Явная передача
-> `token=` делает пример предсказуемым; проверено только то, что вызов **без**
-> корректных креденшелов падает с `AccountNotFoundError`, поэтому сам успешный
-> вызов `service.backends()` здесь **не проверялся** (нужен ваш аккаунт).
+> При неявном `QiskitRuntimeService()` env-путь поиска аккаунта учитывает
+> `QISKIT_IBM_TOKEN`, `QISKIT_IBM_URL` и `QISKIT_IBM_INSTANCE`, в том числе и `instance`.
+> Явная передача `token=`/`channel=` использует переданные параметры вместо сохранённого профиля.
+>
+> Не путайте две ошибки: если `QISKIT_IBM_TOKEN` не задан, **этот snippet** упадёт с
+> `KeyError` на `os.environ["QISKIT_IBM_TOKEN"]` ещё до поиска аккаунта. В отличие от этого,
+> `AccountNotFoundError` означает неудачу неявного поиска аккаунта Runtime, например при
+> `QiskitRuntimeService()`, если не найдены подходящие env-переменные или сохранённый профиль.
+>
+> Успешный вызов `service.backends()` здесь **не проверялся**: для него нужен ваш аккаунт.
 
 ## Шаг 2. Выбор бэкенда и запуск
 
@@ -220,10 +224,32 @@ print(res[0].data.evs, res[0].data.stds)                # ⟨ZZ⟩ ≈ 1 для 
 > либо `StatevectorEstimator()` из `qiskit.primitives` (точное матожидание, 2–10
 > кубитов — см. [проект VQE](../../projects/03-vqe-h2.md)), либо
 > `EstimatorV2` из `qiskit_aer.primitives` с `NoiseModel` на маленькой схеме.
-> Проверено (FakeSherbrooke, нативная схема): `Estimator(mode=FakeSherbrooke())`
-> с `default_precision=0.02` вернул `evs=0.0, stds≈0.0145` для игрушечной схемы
-> из `sx`/`rz` — синтаксис и постобработка корректны, но это не проверка вашей
-> боевой пары `ISA-схема + apply_layout(obs)`.
+> Ниже — **API smoke test**, а не численный бенчмарк: схема, наблюдаемая и seed заданы явно.
+>
+> ```python
+> import numpy as np
+> from qiskit import QuantumCircuit
+> from qiskit.quantum_info import SparsePauliOp
+> from qiskit_ibm_runtime.fake_provider import FakeSherbrooke
+> from qiskit_ibm_runtime.executor_estimator import Estimator
+>
+> backend = FakeSherbrooke()
+> qc = QuantumCircuit(1)
+> qc.sx(0)
+> obs = SparsePauliOp.from_list([("X", 1.0)])
+> estimator = Estimator(mode=backend)
+> estimator.options.default_precision = 0.02
+> estimator.options.simulator.seed_simulator = 7
+> result = estimator.run([(qc, obs)]).result()
+> evs = result[0].data.evs
+> stds = result[0].data.stds
+> assert evs.shape == stds.shape == ()
+> assert np.isfinite(evs) and np.isfinite(stds)
+> print(evs, stds)  # числа не фиксируем: это проверка API, а не эталон значения
+> ```
+>
+> Smoke test проверяет импорты, настройку options и получение конечного скалярного результата,
+> но не вашу боевую пару `ISA-схема + apply_layout(obs)`.
 
 ## Шаг 3. Что ожидать
 

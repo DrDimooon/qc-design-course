@@ -79,7 +79,7 @@ class BuiltSiteBrowserTests(unittest.TestCase):
             "es => es.map(e => e.getAttribute('data-processed') === 'true')")))
 
     def test_heavy_math_pages_do_not_scroll_horizontally(self):
-        # Регрессия M08: бокс скрытого assistive-MML и широкие display-формулы
+        # Бокс скрытого assistive-MML и широкие display-формулы
         # расширяли страницу за viewport. Эталонная страница — entanglement.
         for lesson in ("curriculum/01-quantum-basics/03-entanglement-measurement/",
                        "curriculum/00-fundamentals/problem-set-00/",

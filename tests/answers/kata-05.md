@@ -120,12 +120,16 @@ def sabre_metrics(heuristic, seed):
     out = pm.run(qc)
     return {"swap": out.count_ops().get("swap", 0), "depth": out.depth()}
 
+all_metrics = {}
 for heuristic in ("basic", "decay"):
     metrics = [sabre_metrics(heuristic, seed) for seed in range(10)]
+    all_metrics[heuristic] = metrics
     swaps = [row["swap"] for row in metrics]
     depths = [row["depth"] for row in metrics]
     print(f"{heuristic:>6}: swap mean = {statistics.mean(swaps):.1f}, "
-          f"depth mean = {statistics.mean(depths):.1f}")
+          f"std = {statistics.stdev(swaps):.2f}; "
+          f"depth mean = {statistics.mean(depths):.1f}, "
+          f"std = {statistics.stdev(depths):.2f}")
 ```
 
 Пояснение: transpile целиком использует SabreLayout (layout и routing связаны), поэтому

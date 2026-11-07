@@ -13,13 +13,14 @@ tags: [answers, keys, tests, reference]
 
 | Раздел | Ключи |
 |---|---|
+| Диагностика начального уровня | [answers/diagnostic-00.md](diagnostic-00.md) |
 | Тест модуля 00 (фундамент) | [answers/00.md](00.md) |
 | Тест модуля 01 (основы) | [answers/01.md](01.md) |
 | Тест модуля 02 (программирование) | [answers/02.md](02.md) |
 | Тест модуля 03 (алгоритмы) | [answers/03.md](03.md) |
 | Тест модуля 04 (проектирование систем) | [answers/04.md](04.md) |
 | Тест модуля 05 (железо) | [answers/05.md](05.md) |
-| Сертификационный тест | [answers/certification.md](certification.md) |
+| Qiskit API readiness — промежуточная проверка | [answers/certification.md](certification.md) |
 | Compiler Exit (Core + Compiler, 90 мин) | [answers/compiler-exit.md](compiler-exit.md) |
 | Итоговый экзамен | [answers/final.md](final.md) |
 | Кат 01 (Bell) | [answers/kata-01.md](kata-01.md) |

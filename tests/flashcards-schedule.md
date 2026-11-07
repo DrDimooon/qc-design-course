@@ -54,7 +54,7 @@ tags: [flashcards, spaced-repetition, fsrs, quantum-country, anki, review]
 | 8–10 | 03 (10 карточек) | уроки 03 + [tests/03-quiz.md](03-quiz.md) |
 | 11–14 | 04 (10 карточек) | уроки 04 + [tests/04-quiz.md](04-quiz.md) |
 | 15–16 | 05 (11 карточек, elective) | уроки 05, calibration exercise + [tests/05-quiz.md](05-quiz.md) |
-| 17–18 | микс 00–05 | Certification quiz, далее — при желании final exam |
+| 17–18 | микс 00–05 | Qiskit API readiness — промежуточная проверка, далее — при желании final exam |
 
 План охватывает колоду **00–05**: ориентировочные бюджеты этих модулей —
 18 + 20 + 22 + 28 + 36 + 15 = **139 ч** (00–04: 124 ч; обзорный elective 05: 15 ч).
@@ -119,6 +119,12 @@ src = re.sub(r"`{3}.*?`{3}", "", src, flags=re.S)  # выкинуть code-бл�
 # Разбиваем по заголовкам карточек: ID берём из '### NN.MM'.
 HEAD = re.compile(r"^###\s+(\d{2}\.\d{2})\b", re.M)
 blocks, heads = [], list(HEAD.finditer(src))
+
+def anki_math(s):
+    # Сначала display math $$...$$, затем inline $...$: иначе regex ломает $$.
+    s = re.sub(r"\$\$(.*?)\$\$", r"\\[\1\\]", s, flags=re.S)
+    return re.sub(r"(?<!\$)\$([^$]+)\$(?!\$)", r"\\(\1\\)", s)
+
 for i, m in enumerate(heads):
     end = heads[i + 1].start() if i + 1 < len(heads) else len(src)
     blocks.append((m.group(1), src[m.end():end]))
@@ -133,17 +139,18 @@ for cid, body in blocks:
     a = re.sub(r"Источник:.*$", "", am.group(1), flags=re.S)      # хвост источника
     a = re.sub(r"\[([^\]]+)\]\([^)]*\)", r"\1", a)                # ссылки -> текст
     a = re.sub(r"\s+", " ", a).strip()                            # одна строка
-    if "--mathjax" in sys.argv:                                   # $...$ -> \(...\) для Anki
-        q, a = (re.sub(r"\$([^$]+)\$", r"\\(\1\\)", s) for s in (q, a))
+    if "--mathjax" in sys.argv:                                   # \[...\] и \(...\) для Anki
+        q, a = (anki_math(s) for s in (q, a))
     if not q or not a:
         sys.exit(f"карточка {cid}: пустой вопрос или ответ")
     rows.append(f"{cid}\t{q}\t{a}")
     seen.add(cid)
 
 src_ids = [m.group(1) for m in heads]
-missing = sorted(set(src_ids) - seen)   # сравнение множеств, а не только счётчиков
-if missing or len(seen) != len(set(src_ids)):
-    sys.exit(f"потеряны карточки: {missing or 'дубли ID'}")
+duplicates = sorted(cid for cid in set(src_ids) if src_ids.count(cid) > 1)
+missing = sorted(set(src_ids) - seen)
+if missing or len(seen) != len(src_ids):   # сравнение с исходным, НЕ дедуплицированным списком
+    sys.exit(f"пропущенные карточки: {missing or 'нет'}; дубли ID: {duplicates or 'нет'}")
 if not rows:   # ноль карточек — всегда сбой сбора, а не «успешный экспорт»
     sys.exit("0 карточек: проверьте формат — <details> может нести атрибуты "
              "(<details markdown=\"1\">), шаблон ищет именно это")
@@ -151,11 +158,10 @@ pathlib.Path("flashcards.tsv").write_text("\n".join(rows), encoding="utf-8")
 print(f"exported {len(rows)} cards -> flashcards.tsv")
 ```
 
-Тот же трюк одной заменой sed — если TSV уже экспортирован и нужно только перевести формулы `\$...\$` в формат MathJax для Anki:
-
-```bash
-sed -E 's/\$([^$]+)\$/\\(\1\\)/g' flashcards.tsv > flashcards-mathjax.tsv
-```
+Для формата MathJax используйте только Python-экспортёр с флагом `--mathjax`: он сначала
+обрабатывает многострочные `$$...$$` как `\[...\]`, затем `$...$` как `\(...\)`.
+Одну замену sed здесь не рекомендуем: она не различает display/inline-математику и
+может повредить формулы.
 
 Параметры импорта в Anki: File → Import → разделитель Tab; колонки 1 (ID) — пропустить или связать с полем комментария, 2 → Front, 3 → Back; включите «Allow HTML», если в ответах остались теги (их нет — но на будущее). Карточки отобразят LaTeX через `\(...\)`, если использовали флаг `--mathjax`.
 
